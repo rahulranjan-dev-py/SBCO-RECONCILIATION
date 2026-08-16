@@ -30,15 +30,19 @@ jobs:
               core.setFailed(`Refusing to delete '${target}' (default branch).`);
               return;
             }
-            // Only delete work that is already contained in the default branch.
+            // Only delete work that the default branch already has. A branch
+            // counts as merged when its commits are in the default branch's
+            // history, or - after a squash merge - when its content diff
+            // against the default branch is empty.
             const { data: cmp } = await github.rest.repos.compareCommitsWithBasehead({
               ...context.repo,
               basehead: `${repo.default_branch}...${target}`,
             });
-            if (cmp.ahead_by > 0) {
+            const contentMerged = (cmp.files ?? []).length === 0;
+            if (cmp.ahead_by > 0 && !contentMerged) {
               core.setFailed(
-                `Refusing: '${target}' has ${cmp.ahead_by} commit(s) not in ` +
-                `'${repo.default_branch}'. Merge them first.`);
+                `Refusing: '${target}' has ${cmp.ahead_by} commit(s) with changes ` +
+                `not in '${repo.default_branch}'. Merge them first.`);
               return;
             }
             await github.rest.git.deleteRef({
