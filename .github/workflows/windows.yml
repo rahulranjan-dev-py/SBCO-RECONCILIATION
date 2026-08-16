@@ -101,11 +101,32 @@ jobs:
             echo "admin rights, no Python needed. See the [user guide](docs/USER_GUIDE.md)."
           } >> dist/RELEASE_NOTES.md
 
+      - name: Point the release tag at the built commit
+        # Without this, creating a release for a not-yet-existing tag lets the
+        # API default the tag to the repository's default branch - the release
+        # then points at code that was never built or tested.
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
+        uses: actions/github-script@v7
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        with:
+          script: |
+            const ref = `tags/${process.env.RELEASE_TAG}`;
+            try {
+              await github.rest.git.updateRef({
+                ...context.repo, ref, sha: context.sha, force: true });
+            } catch (error) {
+              if (error.status !== 404 && error.status !== 422) throw error;
+              await github.rest.git.createRef({
+                ...context.repo, ref: `refs/${ref}`, sha: context.sha });
+            }
+
       - name: Attach to release
         if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.release_tag || github.ref_name }}
+          target_commitish: ${{ github.sha }}
           name: SBCO Reconciliation ${{ inputs.release_tag || github.ref_name }}
           body_path: dist/RELEASE_NOTES.md
           files: |
