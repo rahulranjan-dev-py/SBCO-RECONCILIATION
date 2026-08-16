@@ -12,15 +12,15 @@ from datetime import date, datetime
 from pathlib import Path
 
 from . import __version__, refdata
-from .fiscal import Period, quarter_label
+from .annexure import build_table1, entries_from_reconciliation
+from .fiscal import Period, fy_label, quarter_label
 from .ingest.batch import load_files, summarise
 from .model import Source
 from .normalize import parse_date
-from .annexure import build_table1
 from .reconcile import (coverage, reconcile_by_code, reconcile_by_date,
                         reconcile_by_office, reconcile_clearing)
-from .reports import (write_annexure_iv_table1, write_discrepancy_report,
-                      write_recon_sheet)
+from .reports import (write_annexure_iv_table1, write_discrepancy_register,
+                      write_discrepancy_report, write_recon_sheet)
 from .store import Store, adopt_legacy_database, default_db_path
 
 DB_DEFAULT = str(default_db_path())
@@ -256,6 +256,73 @@ def cmd_discrepancy(args):
     return 0
 
 
+def cmd_register(args):
+    """The Table-3 register: record, list, settle, export."""
+    with Store(args.db) as store:
+        if args.record:
+            period = _period(args)
+            entry_date = args.date or period.end
+            result = reconcile_by_code(store, period, check_coverage=False)
+            candidates = entries_from_reconciliation(result, entry_date,
+                                                     office_name=args.office)
+            already = store.open_register_codes(entry_date)
+            fresh = [e for e in candidates if e.account_code not in already]
+            store.add_register_entries(fresh)
+            skipped = len(candidates) - len(fresh)
+            print(f"  {len(fresh)} entr{'y' if len(fresh) == 1 else 'ies'} added "
+                  f"to the FY {fy_label(entry_date)} register"
+                  + (f"; {skipped} already open for {entry_date:%d-%m-%Y} and skipped."
+                     if skipped else "."))
+
+        if args.settle:
+            if args.date is None:
+                raise SystemExit("error: --settle needs --date, the date of rectification")
+            if not (args.misc or args.te):
+                raise SystemExit("error: record how it was rectified - give "
+                                 "--misc and/or --te")
+            try:
+                entry = store.settle_register_entry(
+                    args.settle, args.date,
+                    misc_transaction=args.misc, transfer_entry=args.te)
+            except ValueError as exc:
+                raise SystemExit(f"error: {exc}")
+            print(f"  Settled {entry.financial_year} Sl.{entry.serial} "
+                  f"({entry.account_code}) on {entry.rectified_date:%d-%m-%Y}.")
+
+        years = store.register_years()
+        fy = args.fy or (years[-1] if years else fy_label(date.today()))
+        entries = store.register_entries(fy=fy, only_open=args.open)
+        shown = "open entries" if args.open else "entries"
+        print(f"\n  FY {fy}: {len(entries)} {shown}"
+              + (f" (register also covers {', '.join(y for y in years if y != fy)})"
+                 if len(years) > 1 else ""))
+        if entries:
+            print(f"  {'ref':>5} {'sl':>4}  {'date':<12}{'a/c code':<12}"
+                  f"{'description':<36}{'difference':>14}    status")
+        for e in entries:
+            status = (f"settled {e.rectified_date:%d-%m-%Y}" if e.is_settled
+                      else f"OPEN {e.days_outstanding}d")
+            diff = e.difference_receipt if e.difference_receipt else e.difference_payment
+            side = "R" if e.difference_receipt else "P"
+            print(f"  #{e.id:>4} {e.serial:>4}  {e.entry_date:%d-%m-%Y}  "
+                  f"{e.account_code:<12}{(e.description or '')[:34]:<36}"
+                  f"{diff:>14,} {side}  {status}")
+        if any(not e.is_settled for e in entries):
+            print("\n  settle one with: sbco register --settle <ref> "
+                  "--date DD-MM-YYYY --misc \"...\" [--te \"...\"]")
+
+        if args.export is not None:
+            target = args.export or f"Table3-Register-{fy.replace('/', '-')}.xlsx"
+            all_entries = store.register_entries(fy=fy)
+            if not all_entries:
+                raise SystemExit(f"error: the register has no entries for {fy}")
+            path = write_discrepancy_register(
+                target, all_entries, financial_year=fy,
+                ho_name=store.get("ho_name", ""))
+            print(f"\n  written: {path}")
+    return 0
+
+
 # ------------------------------------------------------------------ parser
 
 def build_parser():
@@ -326,12 +393,31 @@ def build_parser():
     sp.add_argument("batch_id", type=int)
     sp.set_defaults(func=cmd_reverse)
 
-    sp = sub.add_parser("discrepancy", help="discrepancy register")
+    sp = sub.add_parser("discrepancy", help="period discrepancy snapshots (legacy)")
     add_period(sp)
     sp.add_argument("--add", action="store_true", help="record current differences")
     sp.add_argument("--remarks", default="")
     sp.add_argument("--export")
     sp.set_defaults(func=cmd_discrepancy)
+
+    sp = sub.add_parser(
+        "register", help="Table-3 daily discrepancy register: record, settle, export")
+    add_period(sp)
+    sp.add_argument("--record", action="store_true",
+                    help="save the period's differences into the register")
+    sp.add_argument("--date", type=_date,
+                    help="entry date when recording; rectification date when settling")
+    sp.add_argument("--office", default="",
+                    help="post office where the discrepancy was found")
+    sp.add_argument("--settle", type=int, metavar="ID",
+                    help="mark one entry rectified (needs --date and --misc/--te)")
+    sp.add_argument("--misc", default="", help="particulars of Misc. transaction posted")
+    sp.add_argument("--te", default="", help="particulars of transfer entries posted")
+    sp.add_argument("--fy", help="financial year, e.g. 2026/27 (default: latest)")
+    sp.add_argument("--open", action="store_true", help="list only unsettled entries")
+    sp.add_argument("--export", nargs="?", const="", metavar="FILE",
+                    help="write the FY's register as Table-3 (.xlsx)")
+    sp.set_defaults(func=cmd_register)
     return p
 
 

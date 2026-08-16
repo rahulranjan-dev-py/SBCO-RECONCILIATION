@@ -26,15 +26,15 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
 from .. import __version__, refdata
-from ..fiscal import Period, month_end, month_start, quarter_label
+from ..annexure import build_table1, entries_from_reconciliation
+from ..fiscal import Period, fy_label, month_end, month_start, quarter_label
 from ..ingest.batch import load_one
 from ..model import Source
 from ..normalize import parse_amount, parse_date
-from ..annexure import build_table1
 from ..reconcile import (coverage, reconcile_by_code, reconcile_by_date,
                          reconcile_by_office, reconcile_clearing)
-from ..reports import (write_annexure_iv_table1, write_discrepancy_report,
-                       write_recon_sheet)
+from ..reports import (write_annexure_iv_table1, write_discrepancy_register,
+                       write_discrepancy_report, write_recon_sheet)
 from ..store import Store, adopt_legacy_database, default_db_path
 
 STATIC = Path(__file__).parent / "static"
@@ -271,13 +271,22 @@ class Api:
                     "transfer_entries": len(transfer_entries)}
 
     def export(self, payload):
-        period = Period(parse_date(payload["start"]), parse_date(payload["end"]))
         with self._store() as store:
             kind = payload.get("kind", "reconcile")
-            if kind == "discrepancy":
+            if kind == "table3":
+                fy = str(payload.get("fy", "")).strip() or fy_label(date.today())
+                entries = store.register_entries(fy=fy)
+                if not entries:
+                    return {"error": f"The register has no entries for {fy}."}
+                name = f"Table3-Register-{fy.replace('/', '-')}.xlsx"
+                write_discrepancy_register(self.outdir / name, entries,
+                                           financial_year=fy,
+                                           ho_name=store.get("ho_name", ""))
+            elif kind == "discrepancy":
                 name = f"Discrepancy-Report-{date.today():%Y-%m-%d}.xlsx"
                 write_discrepancy_report(self.outdir / name, store.discrepancies())
             else:
+                period = Period(parse_date(payload["start"]), parse_date(payload["end"]))
                 result = reconcile_by_code(store, period, check_coverage=False,
                                            include_zero_rows=bool(payload.get("all")))
                 name = f"Reconciliation-{period.start:%d%b%y}-{period.end:%d%b%y}.xlsx"
@@ -286,14 +295,71 @@ class Api:
         DOWNLOADABLE.add(name)
         return {"file": name}
 
+    # ------------------------------------------------------ Table-3 register
+
+    @staticmethod
+    def _register_row(entry) -> dict:
+        return {
+            "id": entry.id, "fy": entry.financial_year, "serial": entry.serial,
+            "date": entry.entry_date, "code": entry.account_code,
+            "description": entry.description, "office": entry.office_name,
+            "cbs_receipt": entry.cbs_receipt, "cbs_payment": entry.cbs_payment,
+            "cashbook_receipt": entry.cashbook_receipt,
+            "cashbook_payment": entry.cashbook_payment,
+            "difference_receipt": entry.difference_receipt,
+            "difference_payment": entry.difference_payment,
+            "settled": entry.is_settled, "rectified_date": entry.rectified_date,
+            "misc_transaction": entry.misc_transaction,
+            "transfer_entry": entry.transfer_entry,
+            "days_outstanding": entry.days_outstanding,
+        }
+
+    def register(self, q):
+        with self._store() as store:
+            years = store.register_years()
+            fy = q.get("fy", [""])[0] or (years[-1] if years else fy_label(date.today()))
+            entries = store.register_entries(fy=fy)
+            return {
+                "fy": fy, "years": years or [fy],
+                "rows": [self._register_row(e) for e in entries],
+                "open": sum(1 for e in entries if not e.is_settled),
+                "settled": sum(1 for e in entries if e.is_settled),
+            }
+
     def record_discrepancies(self, payload):
+        """Save the period's differences into the Table-3 register.
+
+        The differences are recomputed here rather than trusted from the page,
+        and a code that already has an open entry for the same date is skipped,
+        so pressing the button twice cannot double-enter a discrepancy.
+        """
         period = Period(parse_date(payload["start"]), parse_date(payload["end"]))
+        entry_date = parse_date(payload.get("date", "")) or period.end
         with self._store() as store:
             result = reconcile_by_code(store, period, check_coverage=False)
-            for row in result.differences:
-                store.add_discrepancy(period, row, payload.get("remarks", ""))
-            return {"added": len(result.differences),
-                    "total": len(store.discrepancies())}
+            candidates = entries_from_reconciliation(
+                result, entry_date, office_name=str(payload.get("office", "")).strip())
+            already = store.open_register_codes(entry_date)
+            fresh = [e for e in candidates if e.account_code not in already]
+            store.add_register_entries(fresh)
+            return {"added": len(fresh),
+                    "skipped": len(candidates) - len(fresh),
+                    "fy": fy_label(entry_date)}
+
+    def settle_register(self, payload):
+        try:
+            entry_id = int(payload.get("id"))
+        except (TypeError, ValueError):
+            raise ValueError("That register entry reference is not valid.")
+        rectified = parse_date(payload.get("date", ""))
+        if rectified is None:
+            raise ValueError("Enter the date of rectification as dd-mm-yyyy.")
+        with self._store() as store:
+            entry = store.settle_register_entry(
+                entry_id, rectified,
+                misc_transaction=str(payload.get("misc", "")).strip(),
+                transfer_entry=str(payload.get("te", "")).strip())
+            return {"ok": True, "row": self._register_row(entry)}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -415,6 +481,7 @@ class Handler(BaseHTTPRequestHandler):
                 "datewise": self.api.datewise, "officewise": self.api.officewise,
                 "clearing": self.api.clearing,
                 "transfer-entries": self.api.transfer_entries,
+                "register": self.api.register,
             }
             if name not in routes:
                 return self._fail("No such action.", 404)
@@ -488,6 +555,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/export": self.api.export,
             "/api/transfer-entry": self.api.add_transfer_entry,
             "/api/record-discrepancies": self.api.record_discrepancies,
+            "/api/register-settle": self.api.settle_register,
         }
         if url.path not in routes:
             return self._fail("No such action.", 404)

@@ -432,6 +432,97 @@ async function loadTransferEntries() {
     : `<p class="empty">No transfer entries recorded.</p>`;
 }
 
+/* ── discrepancy register (Table-3) ─────────────────────────── */
+
+const reg = { fy: "", filter: "open", rows: [], settling: null };
+
+async function loadRegister() {
+  try {
+    const data = await get("register", reg.fy ? { fy: reg.fy } : {});
+    reg.fy = data.fy;
+    reg.rows = data.rows;
+    $("#regFy").innerHTML = data.years
+      .map((y) => `<option value="${esc(y)}" ${y === data.fy ? "selected" : ""}>FY ${esc(y)}</option>`)
+      .join("");
+    renderRegister();
+  } catch (err) { toast(err.message, true); }
+}
+
+function renderRegister() {
+  const rows = reg.rows.filter((r) =>
+    reg.filter === "all" ? true : reg.filter === "open" ? !r.settled : r.settled);
+
+  if (!rows.length) {
+    const openCount = reg.rows.filter((r) => !r.settled).length;
+    $("#regOut").innerHTML = `<div class="card"><p class="empty">${
+      reg.rows.length === 0
+        ? "The register is empty for this financial year. Use <b>Save to register</b> on the Reconcile screen to record a day's discrepancies."
+        : reg.filter === "open"
+          ? "Nothing is pending — every recorded discrepancy has been settled."
+          : `No settled entries yet. ${openCount} still open.`}</p></div>`;
+    return;
+  }
+
+  $("#regOut").innerHTML = `<div class="card">` + table(
+    ["Sl", "Date", "A/c code", "Description", "Office",
+     "Diff (Receipt)", "Diff (Payment)", "Status", ""],
+    rows.map((r) => [
+      { v: r.serial, cls: "mono" },
+      { v: fmtISO(r.date), cls: "mono" },
+      { v: esc(r.code), cls: "mono" },
+      { v: esc(r.description) },
+      { v: esc(r.office || "—") },
+      { v: r.difference_receipt === 0 ? "—" : moneyAlways(r.difference_receipt),
+        cls: "num " + (r.difference_receipt === 0 ? "zero" : "neg") },
+      { v: r.difference_payment === 0 ? "—" : moneyAlways(r.difference_payment),
+        cls: "num " + (r.difference_payment === 0 ? "zero" : "neg") },
+      { v: r.settled
+          ? `Settled ${fmtISO(r.rectified_date)}`
+          : `Open · ${r.days_outstanding} day${r.days_outstanding === 1 ? "" : "s"}`,
+        cls: r.settled ? "zero" : "" },
+      { v: r.settled ? "" :
+          `<button class="link" data-settle="${r.id}">Settle…</button>` },
+    ])) + `</div>`;
+
+  $$("[data-settle]").forEach((btn) =>
+    btn.addEventListener("click", () => openSettle(+btn.dataset.settle)));
+}
+
+function openSettle(id) {
+  const row = reg.rows.find((r) => r.id === id);
+  if (!row) return;
+  reg.settling = id;
+  $("#settleTitle").textContent =
+    `Settle Sl.${row.serial} — ${row.code} (${fmtISO(row.date)})`;
+  $("#stDate").value = toDMY(new Date());
+  $("#stMisc").value = "";
+  $("#stTe").value = "";
+  $("#settleCard").hidden = false;
+  $("#settleCard").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+async function settleEntry() {
+  if (!reg.settling) return;
+  const when = parseDMY($("#stDate").value);
+  if (!when) { toast("Enter the rectification date as dd-mm-yyyy.", true); return; }
+  const misc = $("#stMisc").value.trim();
+  const te = $("#stTe").value.trim();
+  if (!misc && !te) {
+    toast("Record how it was rectified — the Misc. transaction, the transfer " +
+          "entry, or both.", true);
+    return;
+  }
+  try {
+    await post("register-settle", {
+      id: reg.settling, date: toDMY(when), misc, te,
+    });
+    $("#settleCard").hidden = true;
+    reg.settling = null;
+    toast("Settled and recorded in the register.");
+    loadRegister();
+  } catch (err) { toast(err.message, true); }
+}
+
 /* ── uploading ──────────────────────────────────────────────── */
 
 function openSheet() {
@@ -508,6 +599,7 @@ function show(view) {
   $("#scroll").scrollTop = 0;
 
   if (view === "clearing") loadClearing();
+  if (view === "register") loadRegister();
   if (view === "files") loadFiles();
   if (view === "settings") renderSettings();
   if (view === "return") {
@@ -658,8 +750,35 @@ function wire() {
     if (!state.period) return;
     try {
       const res = await post("record-discrepancies", { ...state.period });
-      toast(`${res.added} row${res.added === 1 ? "" : "s"} saved to the register.`);
+      const skipped = res.skipped
+        ? ` ${res.skipped} already on the register and skipped.` : "";
+      toast(res.added
+        ? `${res.added} entr${res.added === 1 ? "y" : "ies"} added to the FY ${res.fy} register.${skipped}`
+        : `Nothing new to record.${skipped}`);
     } catch (err) { toast(err.message, true); }
+  });
+
+  $$("#regSeg button").forEach((b) =>
+    b.addEventListener("click", () => {
+      $$("#regSeg button").forEach((o) => o.classList.toggle("on", o === b));
+      reg.filter = b.dataset.reg;
+      renderRegister();
+    }));
+  $("#regFy").addEventListener("change", (e) => {
+    reg.fy = e.target.value;
+    loadRegister();
+  });
+  $("#btnRegExport").addEventListener("click", async () => {
+    try {
+      const res = await post("export", { kind: "table3", fy: reg.fy });
+      toast(`${res.file} saved to your working folder.`);
+      window.location = `/download?f=${encodeURIComponent(res.file)}`;
+    } catch (err) { toast(err.message, true); }
+  });
+  $("#btnSettle").addEventListener("click", settleEntry);
+  $("#btnSettleCancel").addEventListener("click", () => {
+    $("#settleCard").hidden = true;
+    reg.settling = null;
   });
 }
 

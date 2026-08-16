@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sbco-recon"
-version = "2.4.0"
+version = "2.5.0"
 description = "Cashbook-CBS reconciliation engine for India Post SBCO"
 requires-python = ">=3.9"
 dependencies = ["openpyxl>=3.1"]

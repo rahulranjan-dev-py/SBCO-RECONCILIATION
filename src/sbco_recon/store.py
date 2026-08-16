@@ -78,6 +78,25 @@ CREATE TABLE IF NOT EXISTS discrepancy (
     created_at   TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS register (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    fy               TEXT NOT NULL,          -- '2026/27'; serials reset each FY
+    serial           INTEGER NOT NULL,
+    entry_date       TEXT NOT NULL,
+    account_code     TEXT NOT NULL,
+    description      TEXT NOT NULL DEFAULT '',
+    office_name      TEXT NOT NULL DEFAULT '',
+    cbs_receipt      TEXT NOT NULL DEFAULT '0',
+    cbs_payment      TEXT NOT NULL DEFAULT '0',
+    cashbook_receipt TEXT NOT NULL DEFAULT '0',
+    cashbook_payment TEXT NOT NULL DEFAULT '0',
+    rectified_date   TEXT,
+    misc_transaction TEXT NOT NULL DEFAULT '',
+    transfer_entry   TEXT NOT NULL DEFAULT '',
+    created_at       TEXT NOT NULL,
+    UNIQUE (fy, serial)
+);
+
 CREATE TABLE IF NOT EXISTS transfer_entry (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     month        TEXT NOT NULL,
@@ -392,6 +411,109 @@ class Store:
     def discrepancies(self) -> list:
         return self.conn.execute(
             "SELECT * FROM discrepancy ORDER BY period_start, account_code").fetchall()
+
+    # --------------------------------------------- Table-3 register (SB 09/2026)
+
+    def _register_entry(self, row) -> "object":
+        from .annexure import RegisterEntry
+
+        return RegisterEntry(
+            id=row["id"],
+            serial=row["serial"],
+            entry_date=date.fromisoformat(row["entry_date"]),
+            account_code=row["account_code"],
+            description=row["description"],
+            office_name=row["office_name"],
+            cbs_receipt=Decimal(row["cbs_receipt"]),
+            cbs_payment=Decimal(row["cbs_payment"]),
+            cashbook_receipt=Decimal(row["cashbook_receipt"]),
+            cashbook_payment=Decimal(row["cashbook_payment"]),
+            rectified_date=(date.fromisoformat(row["rectified_date"])
+                            if row["rectified_date"] else None),
+            misc_transaction=row["misc_transaction"],
+            transfer_entry=row["transfer_entry"],
+        )
+
+    def add_register_entries(self, entries) -> list:
+        """Record entries in the Table-3 register, assigning serials.
+
+        Serial numbers restart from 1 each financial year (the order's own
+        footnote), so the next serial is read per entry's FY inside the same
+        transaction that inserts it - two tabs saving at once cannot mint the
+        same number.
+        """
+        ids = []
+        with self.conn:
+            for entry in entries:
+                fy = entry.financial_year
+                serial = self.conn.execute(
+                    "SELECT COALESCE(MAX(serial), 0) + 1 FROM register WHERE fy=?",
+                    (fy,)).fetchone()[0]
+                cur = self.conn.execute(
+                    """INSERT INTO register
+                       (fy, serial, entry_date, account_code, description,
+                        office_name, cbs_receipt, cbs_payment,
+                        cashbook_receipt, cashbook_payment, rectified_date,
+                        misc_transaction, transfer_entry, created_at)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    (fy, serial, entry.entry_date.isoformat(),
+                     entry.account_code, entry.description, entry.office_name,
+                     str(entry.cbs_receipt), str(entry.cbs_payment),
+                     str(entry.cashbook_receipt), str(entry.cashbook_payment),
+                     entry.rectified_date.isoformat() if entry.rectified_date else None,
+                     entry.misc_transaction, entry.transfer_entry,
+                     datetime.now().isoformat(timespec="seconds")))
+                ids.append(cur.lastrowid)
+        return ids
+
+    def register_entries(self, fy: Optional[str] = None,
+                         only_open: bool = False) -> list:
+        sql = "SELECT * FROM register WHERE 1=1"
+        args = []
+        if fy:
+            sql += " AND fy=?"
+            args.append(fy)
+        if only_open:
+            sql += " AND rectified_date IS NULL"
+        rows = self.conn.execute(sql + " ORDER BY fy, serial", args).fetchall()
+        return [self._register_entry(r) for r in rows]
+
+    def register_years(self) -> list:
+        return [r["fy"] for r in self.conn.execute(
+            "SELECT DISTINCT fy FROM register ORDER BY fy")]
+
+    def open_register_codes(self, entry_date: date) -> set:
+        """Codes that already have an unsettled entry for this date - the
+        save-from-reconciliation dedupe guard."""
+        rows = self.conn.execute(
+            """SELECT account_code FROM register
+               WHERE entry_date=? AND rectified_date IS NULL""",
+            (entry_date.isoformat(),)).fetchall()
+        return {r["account_code"] for r in rows}
+
+    def settle_register_entry(self, entry_id: int, rectified_date: date,
+                              misc_transaction: str = "",
+                              transfer_entry: str = "") -> "object":
+        """Mark one entry rectified. The order treats a discrepancy as settled
+        only after the rectification is verified, which the date records."""
+        row = self.conn.execute(
+            "SELECT * FROM register WHERE id=?", (entry_id,)).fetchone()
+        if row is None:
+            raise ValueError(f"There is no register entry numbered {entry_id}.")
+        if row["rectified_date"]:
+            raise ValueError(
+                f"Entry {row['fy']} Sl.{row['serial']} was already settled "
+                f"on {row['rectified_date']}.")
+        if rectified_date < date.fromisoformat(row["entry_date"]):
+            raise ValueError("The rectification date is before the entry's own date.")
+        with self.conn:
+            self.conn.execute(
+                """UPDATE register SET rectified_date=?, misc_transaction=?,
+                   transfer_entry=? WHERE id=?""",
+                (rectified_date.isoformat(), misc_transaction,
+                 transfer_entry, entry_id))
+        return self._register_entry(self.conn.execute(
+            "SELECT * FROM register WHERE id=?", (entry_id,)).fetchone())
 
     # -------------------------------------------------------- transfer entry
 

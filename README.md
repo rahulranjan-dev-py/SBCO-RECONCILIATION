@@ -28,8 +28,9 @@ for end users.
 ## Use
 
 Double-click **Start SBCO Reconciliation.bat**. The tool opens in your browser:
-six screens — Reconcile, Investigate, Clearing, Monthly return, Files, Settings.
-Drag report files onto **Add reports**; the tool identifies each one itself.
+seven screens — Reconcile, Investigate, Clearing, Monthly return, Register,
+Files, Settings. Drag report files onto **Add reports**; the tool identifies
+each one itself.
 
 The interface is a local web app served by the Python standard library, bound to
 127.0.0.1 only. No account system, no telemetry, no outbound connection.
@@ -47,6 +48,9 @@ sbco datewise 8001000200 --month Jul-2026   # find the day a break began
 sbco officewise 8001000100 --month Jul-2026
 sbco clearing --month Jul-2026
 sbco annexure --month Jul-2026              # writes CBS-MRR-TABLE1-Jul-26.xlsx
+sbco register --record --month Jul-2026     # save the month's breaks to Table-3
+sbco register --settle 4 --date 02-08-2026 --misc "Misc txn 12/2026"
+sbco register --export                      # the FY's register as Table-3 .xlsx
 sbco batches                                # what has been loaded
 sbco reverse 3                              # undo exactly one upload
 ```
@@ -137,6 +141,15 @@ Monthly Cash Account is defined by the order as daily cash books plus approved
 transfer entries of the DDO, so TEs are folded into that column. A transfer
 entry posts both legs: the from-code down, the to-code up.
 
+Table-3 is a maintained register, not just an export. **Save to register** on
+the Reconcile screen records the period's breaks (recomputed server-side, one
+open entry per code per date — pressing it twice cannot double-enter); the
+Register screen lists each financial year with serials that restart from 1
+every April, and settles an entry only when the rectification is recorded —
+the Misc. transaction posted, the transfer entry, or both, with the date of
+rectification. The export writes the order's own (a)–(o) layout with the
+difference columns as live formulas.
+
 ## Reference data
 
 Recovered from the original workbook so the rebuild starts with real master
@@ -147,7 +160,7 @@ mismatch/cleared pairs (CBS, PLI/RPLI, IPPB, Other x Receipts/Payments).
 ## Tests
 
 ```bash
-pytest -q        # 119 passed
+pytest -q        # 128 passed
 pytest -q -O     # also passes with assertions stripped
 ```
 

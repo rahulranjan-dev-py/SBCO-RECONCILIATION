@@ -23,8 +23,9 @@
       <li><button data-view="investigate"><span class="k">02</span>Investigate</button></li>
       <li><button data-view="clearing"><span class="k">03</span>Clearing</button></li>
       <li><button data-view="return"><span class="k">04</span>Monthly return</button></li>
-      <li><button data-view="files"><span class="k">05</span>Files</button></li>
-      <li><button data-view="settings"><span class="k">06</span>Settings</button></li>
+      <li><button data-view="register"><span class="k">05</span>Register</button></li>
+      <li><button data-view="files"><span class="k">06</span>Files</button></li>
+      <li><button data-view="settings"><span class="k">07</span>Settings</button></li>
     </ul>
 
     <div class="rail-foot">
@@ -172,6 +173,46 @@
             <button class="btn" id="btnTe">Add transfer entry</button>
           </div>
           <div id="teList"></div>
+        </div>
+      </section>
+
+      <!-- ── REGISTER ── -->
+      <section class="view" data-view="register">
+        <h1 class="h1">Discrepancy register</h1>
+        <p class="lede">The CBS Daily Discrepancy Reconciliation Register
+          (Annexure-IV Table-3). Serial numbers restart each financial year;
+          the register is preserved permanently and checked at inspection.</p>
+
+        <div class="tools">
+          <div class="seg" id="regSeg">
+            <button data-reg="open" class="on">Open</button>
+            <button data-reg="settled">Settled</button>
+            <button data-reg="all">Everything</button>
+          </div>
+          <select id="regFy" class="quick" aria-label="Financial year"></select>
+          <div class="tools-right">
+            <button class="btn btn-ghost" id="btnRegExport">Export Table-3</button>
+          </div>
+        </div>
+
+        <div id="regOut"></div>
+
+        <div class="card" id="settleCard" hidden>
+          <h2 class="h2" id="settleTitle">Settle entry</h2>
+          <p class="lede-sm">Recorded once the rectification is verified — a
+            Misc. transaction in APT, a transfer entry, or both.</p>
+          <div class="field-row">
+            <div class="field"><label class="lbl" for="stDate">Date of rectification</label>
+              <input type="text" id="stDate" class="dt" placeholder="dd-mm-yyyy"></div>
+            <div class="field field-grow"><label class="lbl" for="stMisc">Misc. transaction posted</label>
+              <input type="text" id="stMisc" class="txt"></div>
+            <div class="field field-grow"><label class="lbl" for="stTe">Transfer entries posted</label>
+              <input type="text" id="stTe" class="txt"></div>
+          </div>
+          <div class="card-foot">
+            <button class="btn btn-solid" id="btnSettle">Mark as settled</button>
+            <button class="btn btn-ghost" id="btnSettleCancel">Cancel</button>
+          </div>
         </div>
       </section>
 
