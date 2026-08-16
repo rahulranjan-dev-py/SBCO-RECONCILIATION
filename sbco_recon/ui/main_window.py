@@ -14,7 +14,16 @@ from PySide6.QtWidgets import (
 )
 
 from .. import APP_NAME, __version__
-from .pages import DailyReconPage, DashboardPage, ImportsPage, MismatchPage, RegisterPage
+from .pages import (
+    DailyReconPage,
+    DashboardPage,
+    ImportsPage,
+    MastersPage,
+    MismatchPage,
+    MonthlyPage,
+    OfficewisePage,
+    RegisterPage,
+)
 
 
 class MainWindow(QMainWindow):
@@ -36,8 +45,11 @@ class MainWindow(QMainWindow):
             ("Dashboard", DashboardPage()),
             ("Import reports", ImportsPage()),
             ("Daily reconciliation", DailyReconPage()),
+            ("Office-wise recon", OfficewisePage()),
             ("Mismatch heads", MismatchPage()),
             ("Discrepancy register", RegisterPage()),
+            ("Monthly report (PAO)", MonthlyPage()),
+            ("Masters & settings", MastersPage()),
         ]
         for label, page in self.pages:
             QListWidgetItem(label, self.nav)

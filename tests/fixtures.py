@@ -63,6 +63,69 @@ def make_glwise_file(
     return path
 
 
+def make_glwise_setid_file(
+    path: Path,
+    date: dt.date,
+    sections: list[tuple[str, list[tuple[str, str, float, float]]]],  # (sol_id, rows)
+) -> Path:
+    """Build a synthetic Set-ID GL-wise report: one 'Sol ID / Desc :' block and
+    data table per SOL, all in one sheet."""
+    wb = Workbook()
+    ws = wb.active
+    ws["A1"] = "India Post"
+    ws["I4"] = GLWISE_TITLE
+    ws["E8"] = "Date :"
+    ws["F8"] = date.strftime("%d-%m-%Y")
+    ws["B14"] = "Set ID / Desc :"
+    ws["C14"] = "TAMI1 - TAMI1"
+
+    headers = ["S.No", "GL Sub Head Code", "IT2.0 A/C Code", "IT2.0 Acct Code Desc",
+               "Deposits (Cr)", "Withdrawals (Dr)"]
+    r = 16
+    for sol_id, rows in sections:
+        ws.cell(row=r, column=2, value="Sol ID / Desc :")
+        ws.cell(row=r, column=3, value=f"{sol_id} - Some office")
+        r += 1
+        for idx, header in enumerate(headers):
+            ws.cell(row=r, column=9 + idx, value=header)
+        r += 1
+        for sno, (code, desc, dep, wd) in enumerate(rows, start=1):
+            ws.cell(row=r, column=9, value=sno)
+            ws.cell(row=r, column=10, value="30001")
+            ws.cell(row=r, column=11, value=int(code))
+            ws.cell(row=r, column=12, value=desc)
+            ws.cell(row=r, column=13, value=dep)
+            ws.cell(row=r, column=14, value=wd)
+            r += 1
+        ws.cell(row=r, column=12, value="Total")
+        r += 2
+
+    wb.save(path)
+    return path
+
+
+def make_apt_details_file(
+    path: Path,
+    account_code: str,
+    rows: list[tuple[dt.date, str, str, float]],  # (date, office_id, office_name, amount)
+) -> Path:
+    """Build a synthetic APT 'Accounting Details' report for one account code."""
+    wb = Workbook()
+    ws = wb.active
+    ws["A1"] = "Accounting Details"
+    ws["A2"] = f"A/c Code : {account_code}"
+    headers = ["Office ID", "Office Name", "Date", "Amount", "Remarks"]
+    for c, header in enumerate(headers, start=1):
+        ws.cell(row=4, column=c, value=header)
+    for r, (date, office_id, office_name, amount) in enumerate(rows, start=5):
+        ws.cell(row=r, column=1, value=office_id)
+        ws.cell(row=r, column=2, value=office_name)
+        ws.cell(row=r, column=3, value=date.strftime("%d/%m/%Y"))
+        ws.cell(row=r, column=4, value=amount)
+    wb.save(path)
+    return path
+
+
 def make_cashbook_file(
     path: Path,
     date: dt.date,

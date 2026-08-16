@@ -28,6 +28,8 @@ class ParsedReport:
     report_type: str
     report_date: dt.date | None
     rows: list[dict] = field(default_factory=list)
+    #: per-SOL breakdown rows, populated by parsers whose report carries SOL sections
+    sol_rows: list[dict] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 
 

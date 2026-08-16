@@ -19,7 +19,7 @@ from sqlalchemy import select
 
 from ...db import get_session
 from ...db.models import ImportLog
-from ...parsers import cashbook, glwise
+from ...parsers import apt_details, cashbook, glwise
 from ...services import import_service
 from ..dataframe_model import DataFrameModel
 from ..widgets import make_date_edit, make_table, qdate_to_date
@@ -27,6 +27,7 @@ from ..widgets import make_date_edit, make_table, qdate_to_date
 REPORT_LABELS = {
     glwise.REPORT_TYPE: "Finacle GL-Wise (CBS)",
     cashbook.REPORT_TYPE: "APT Cashbook",
+    apt_details.REPORT_TYPE: "APT Accounting Details (office-wise)",
 }
 
 
@@ -38,8 +39,8 @@ class ImportsPage(QWidget):
         layout.addWidget(
             QLabel(
                 "Select one or more Excel files — the report type (Finacle GL-Wise / APT "
-                "Cashbook) is detected automatically. Re-uploads of already-loaded dates "
-                "are refused; delete the date range first to re-import."
+                "Cashbook / APT Accounting Details) is detected automatically. Re-uploads "
+                "of already-loaded dates are refused; delete the date range first to re-import."
             )
         )
 

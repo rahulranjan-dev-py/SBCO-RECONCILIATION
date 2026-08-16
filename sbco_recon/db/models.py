@@ -83,6 +83,40 @@ class FinacleGlDaily(Base):
     amount: Mapped[float] = mapped_column(Float, default=0.0)
 
 
+class FinacleSolDaily(Base):
+    """Per-SOL daily Finacle figures, from a GL-wise report generated with a Set ID
+    (one section per SOL). Feeds the office-wise reconciliation."""
+
+    __tablename__ = "finacle_sol_daily"
+    __table_args__ = (
+        UniqueConstraint("date", "sol_id", "account_code", name="uq_finsol_date_sol_code"),
+        Index("ix_finsol_code_date", "account_code", "date"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    date: Mapped[dt.date] = mapped_column(Date)
+    sol_id: Mapped[str] = mapped_column(String(20))
+    account_code: Mapped[str] = mapped_column(String(20))
+    description: Mapped[str] = mapped_column(Text, default="")
+    amount: Mapped[float] = mapped_column(Float, default=0.0)
+
+
+class AptOfficeDaily(Base):
+    """Office-wise daily APT figures for one account code, from the APT
+    'Accounting Details' report (Treasury >> Reports >> Accounting Details)."""
+
+    __tablename__ = "apt_office_daily"
+    __table_args__ = (Index("ix_aptoff_code_date", "account_code", "date"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    date: Mapped[dt.date] = mapped_column(Date)
+    office_id: Mapped[str | None] = mapped_column(String(20))
+    office_name: Mapped[str | None] = mapped_column(String(120))
+    account_code: Mapped[str] = mapped_column(String(20))
+    amount: Mapped[float] = mapped_column(Float, default=0.0)
+    remarks: Mapped[str] = mapped_column(Text, default="")
+
+
 class CashbookDaily(Base):
     """Daily APT cashbook rows (one row per office x account code as downloaded)."""
 

@@ -10,12 +10,22 @@ Book, as mandated by **SB Order No. 09/2026**. It replaces the community Excel/V
 
 ## Features (current)
 
-- **Import** Finacle *GL IT 2.0 GL-Wise Consolidated (Previous Day)* exports and APT
-  *Daily Cash Book* downloads (XLS/XLSX) — batch selection, automatic report-type
+- **Import** Finacle *GL IT 2.0 GL-Wise Consolidated (Previous Day)* exports (both the
+  HO-SOL consolidated and Set-ID per-SOL variants), APT *Daily Cash Book* downloads, and
+  APT *Accounting Details* reports (XLS/XLSX) — batch selection, automatic report-type
   detection, duplicate-date and duplicate-file guards, persistent processing summary,
   delete-by-date-range.
 - **Daily reconciliation**: Finacle vs Cashbook vs Difference per account code over any
   date range, non-zero filter, datewise drilldown per code, Excel export.
+- **Office-wise reconciliation** for one account code: per-SOL Finacle figures vs
+  office-wise APT figures, rolled up to SOL groups (BOs compare under their parent SO's
+  SOL), with strays flagged when an office or SOL is missing from the master.
+- **Monthly report to PAO** (Annexure-IV): Table-1 (Finacle vs Monthly Cash Account
+  R/P per code, where Cash Account = Daily Cash Books + approved Transfer Entries) and
+  Table-2 (opening/current/rectified/pending differences, carried forward month to
+  month, rectifications sourced from the register's settlements) — both exported in the
+  exact prescribed layout with DDO/month header, TOTAL row and signature block.
+- **Transfer entries** of the DDO, per month, TO (+) / FROM (−).
 - **Mismatch heads**: accounted vs cleared vs outstanding for the 8 CBS/IPPB/PLI/Other
   mismatch pairs.
 - **Discrepancy Register** (Annexure-IV Table-3): add entries manually or straight from
@@ -48,6 +58,6 @@ added to `tests/fixtures/` as they become available.
 
 ## Roadmap
 
-See `docs/PLAN.md` — next up: office-wise reconciliation (GL-wise / transaction-report
-vs APT accounting details), transfer entries, Annexure-IV Table-1/Table-2 monthly report
-generation with PDF output, and PyInstaller/Inno Setup packaging for Windows.
+See `docs/PLAN.md` — next up: PDF output for the monthly report, the GL IT 2.0
+Transaction-report parser as a secondary CBS source, and PyInstaller/Inno Setup
+packaging for Windows.

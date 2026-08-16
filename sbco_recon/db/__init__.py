@@ -1,9 +1,11 @@
 from .models import (
     AccountCode,
+    AptOfficeDaily,
     Base,
     CashbookDaily,
     DiscrepancyEntry,
     FinacleGlDaily,
+    FinacleSolDaily,
     ImportLog,
     MismatchPair,
     Office,
@@ -14,7 +16,9 @@ from .session import get_engine, get_session, init_db
 
 __all__ = [
     "AccountCode",
+    "AptOfficeDaily",
     "Base",
+    "FinacleSolDaily",
     "CashbookDaily",
     "DiscrepancyEntry",
     "FinacleGlDaily",
