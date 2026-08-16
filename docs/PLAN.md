@@ -1,5 +1,10 @@
 # SBCO Reconciliation — Windows Software Plan
 
+> **Historical document.** This was the plan for the original PySide6 desktop
+> prototype. The project subsequently adopted the `sbco-recon` engine (browser
+> UI + CLI) as its base — see the repository README for the current
+> architecture. Kept for the requirements analysis it contains.
+
 Goal: replace the Excel/VBA `CASHBOOK_TOOL_for_SBCO` with a proper offline Windows
 application that implements SB Order No. 09/2026 end-to-end for SBCO staff at Head Post
 Offices: import Finacle & APT reports, reconcile daily, maintain the Discrepancy Register,

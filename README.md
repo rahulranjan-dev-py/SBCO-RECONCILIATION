@@ -1,9 +1,35 @@
-# SBCO Cashbook-CBS Reconciliation Engine v2.0
+# SBCO Reconciliation
 
-A rebuild of `CASHBOOK_TOOL_for_SBCO_1_09_6.xlsb` as a tested, scriptable engine.
-Same job - reconcile Finacle/CBS general-ledger figures against the APT 2.0
-cashbook and produce the monthly Annexure-IV return to the PAO - with the
-defects found in the review of the original designed out rather than patched.
+**Cashbook–CBS reconciliation for India Post Head Offices**, implementing
+SB Order No. 09/2026 end to end: import the Finacle/CBS and APT 2.0 reports,
+reconcile them daily, trace every break to the day and office it came from,
+maintain the statutory Discrepancy Register, and produce the monthly
+Annexure-IV return to the PAO.
+
+[![windows](https://github.com/rahulranjan-dev-py/SBCO-RECONCILIATION/actions/workflows/windows.yml/badge.svg)](https://github.com/rahulranjan-dev-py/SBCO-RECONCILIATION/actions/workflows/windows.yml)
+![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-3776AB?logo=python&logoColor=white)
+![Runs offline](https://img.shields.io/badge/runs-100%25%20offline-2e7d32)
+![SB Order 09/2026](https://img.shields.io/badge/SB%20Order-09%2F2026-b26a00)
+
+![The Reconcile screen: Finacle vs Cash Book with the breaks isolated](docs/screenshots/reconcile.png)
+
+It runs as a local web app on the clerk's own PC — bound to 127.0.0.1, no
+account system, no telemetry, no outbound connection — and everything the
+interface does is also a CLI command, so runs can be scripted. It is a ground-up
+rebuild of the community Excel/VBA `CASHBOOK_TOOL_for_SBCO` workbook: same job,
+with the defects found in the review of the original designed out rather than
+patched (see the table below).
+
+## The screens
+
+| | |
+|---|---|
+| ![Investigate: which day the break began, which office it came from](docs/screenshots/investigate.png) **Investigate** — pick a code, see the day the break began and the office it came from | ![Register: the Table-3 discrepancy register with settlement](docs/screenshots/register.png) **Register** — the statutory Table-3 register: FY-wise serials, ageing, settlement |
+| ![Clearing accounts: mismatch vs cleared](docs/screenshots/clearing.png) **Clearing** — the eight mismatch heads paired against their clearing accounts | ![Monthly return: Annexure-IV Table-1 and transfer entries](docs/screenshots/return.png) **Monthly return** — Annexure-IV Table-1 with the DDO's approved transfer entries |
+
+New to the tool? Start with the **[User guide](docs/USER_GUIDE.md)** — the
+daily and monthly routine in plain language. The version history is in the
+**[Changelog](CHANGELOG.md)**.
 
 ## Install
 

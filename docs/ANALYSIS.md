@@ -1,5 +1,9 @@
 # Analysis of Source Materials
 
+> Reference document: the requirements analysis of SB Order 09/2026 and the
+> legacy Excel/VBA tool that this software replaces. The current architecture
+> is described in the repository README.
+
 This document captures what was learned from the two uploaded artifacts, which together
 define the problem the new Windows software must solve.
 
