@@ -41,8 +41,9 @@ Desktop, Documents, a shared drive - and double-click
 Python on the PC, nothing added to PATH; the folder carries its own runtime
 (python.org's embeddable CPython, renamed but unmodified, its PSF signature
 intact). The signed interpreter itself is the entry point precisely because
-managed Windows (Smart App Control, SmartScreen) blocks downloaded *scripts*
-outright but allows reputably signed executables. Upgrading is replacing the
+Smart App Control (default-on for new Windows 11 machines) blocks downloaded
+*scripts* outright, with no override, while the widely-reputed signed
+interpreter runs. Upgrading is replacing the
 folder - the data lives in `%LOCALAPPDATA%\SBCO`, so it survives. See
 `packaging/README.md` for the full design rationale.
 

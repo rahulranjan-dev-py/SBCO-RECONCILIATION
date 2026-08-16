@@ -86,10 +86,38 @@ interactive start with no arguments and for nothing else (-m, -c and
 script runs all differ), and the executable-name check keeps the hook
 inert if this file is ever copied near a normally-named python.exe.
 Set SBCO_NO_AUTOSTART=1 to disable the hook entirely.
+
+This module runs inside `import site`, during interpreter startup, and
+that shapes two rules. SystemExit must never escape it: site's handler
+catches only Exception, so a SystemExit aborts startup as a fatal error -
+os._exit() is the one clean way to end the process from here. And a
+failure must be handled in full here: an uncaught Exception would be
+swallowed by site into a one-line stderr notice and the clerk would land
+in a bare Python prompt.
 """
 
 import os
 import sys
+
+
+def _fail(exc):
+    """The GUI could not start: say so plainly, self-diagnose, wait, exit."""
+    sys.stderr.write(
+        "\\n  The SBCO Reconciliation tool could not start.\\n"
+        "  Reason: %s: %s\\n\\n"
+        "  Checking this PC for the cause...\\n" % (type(exc).__name__, exc))
+    try:
+        from sbco_recon.webapp.doctor import run as doctor_run
+
+        sys.stderr.write(doctor_run().render() + "\\n")
+    except Exception:
+        pass
+    sys.stderr.flush()
+    try:
+        input("  Press Enter to close this window... ")
+    except Exception:
+        pass
+    os._exit(1)
 
 
 def _autostart():
@@ -103,10 +131,17 @@ def _autostart():
     if os.environ.get("SBCO_AUTOSTART_CHECK"):
         # CI proves the double-click path is wired without starting a server.
         print("SBCO-AUTOSTART-OK")
-        raise SystemExit(0)
-    from sbco_recon.cli import main
+        sys.stdout.flush()
+        os._exit(0)
+    try:
+        from sbco_recon.cli import main
 
-    raise SystemExit(main(["gui"]))
+        code = main(["gui"])
+    except Exception as exc:
+        _fail(exc)
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(code if isinstance(code, int) else 0)
 
 
 _autostart()
@@ -132,17 +167,26 @@ To upgrade:  delete this folder and extract the new one. Your data stays.
 
 If Windows blocks something
 ---------------------------
-Windows marks every file downloaded from the internet, and its Smart App
-Control / SmartScreen features block unknown *scripts* such as .bat files.
-That is why the tool starts from "SBCO Reconciliation" (a signed program),
-which Windows allows. If Windows still shows a warning when you start it,
-choose "More info" and then "Run anyway" - or clear the download mark
-first: right-click the downloaded .zip file -> Properties -> tick
-"Unblock" -> OK, and extract it again.
+Windows marks files downloaded from the internet, and two different
+features can react to that mark. They look similar but behave differently:
+
+- "Windows protected your PC" (SmartScreen): choose "More info" and then
+  "Run anyway". Or clear the download mark first: right-click the
+  downloaded .zip -> Properties -> tick "Unblock" -> OK, extract again.
+
+- "Smart App Control blocked a file that may be unsafe": this one offers
+  no way to run anyway. It blocks downloaded script files such as .bat
+  outright - which is exactly why this tool starts from "SBCO
+  Reconciliation", a digitally signed program. In the unlikely event
+  Smart App Control blocks the application file itself, re-download the
+  official release zip and verify it against SHA256SUMS.txt; the only
+  override for a genuine Smart App Control block is switching it off in
+  Windows Security, which is permanent - treat that as a last resort and
+  ask your IT / divisional office first.
 
 sbco.bat runs the same tool from a command prompt (for example:
-sbco.bat doctor). Being a .bat script, it may be blocked on PCs with
-Smart App Control; there, use the application file's own command form:
+sbco.bat doctor). Being a .bat script, PCs with Smart App Control will
+block it; there, use the application file's own command form instead:
 
     "SBCO Reconciliation.exe" -m sbco_recon.cli doctor
 
@@ -287,6 +331,7 @@ def check_bundle(bundle: Path) -> None:
         bundle / "sbco.bat",
         bundle / "README.txt",
         bundle / "LICENSE.txt",
+        bundle / "PYTHON-LICENSE.txt",
         site / "sitecustomize.py",
         site / "sbco_recon" / "cli.py",
         site / "sbco_recon" / "refdata" / "account_codes.json",

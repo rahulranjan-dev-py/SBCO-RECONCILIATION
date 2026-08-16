@@ -14,11 +14,20 @@
   its DLL and `._pth`); the runtime's own PSF licence is preserved as
   `PYTHON-LICENSE.txt`. `sbco.bat` remains for command-line use on machines
   without Smart App Control.
+- The hook exits via `os._exit` — a SystemExit escaping `sitecustomize`
+  during `import site` is a fatal interpreter error, and an uncaught
+  exception there would strand the user at a bare Python prompt. A GUI
+  startup failure now prints a plain-language message, runs the doctor
+  report, and waits for Enter before closing. Both behaviours are pinned by
+  tests that launch a real interpreter bare, through the actual
+  interpreter-init path.
 - CI now verifies the renamed exe's Authenticode signature is still valid,
   exercises the double-click autostart path, and runs the full CLI round
   trip through the renamed exe.
-- Documentation: "If Windows blocks something" guidance in the bundle
-  README, the user guide, and the troubleshooting table.
+- Documentation: "If Windows blocks something" guidance distinguishes
+  SmartScreen (More info → Run anyway / Unblock) from Smart App Control
+  (no override exists) in the bundle README, the user guide, and the
+  troubleshooting table.
 
 ## 2.6.0 — Windows packaging
 

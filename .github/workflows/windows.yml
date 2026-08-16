@@ -115,8 +115,9 @@ jobs:
             echo ""
             echo "---"
             echo "**To use:** download \`SBCO-Reconciliation-*-windows-x64.zip\`, extract"
-            echo "anywhere, double-click **SBCO Reconciliation.bat**. No installer, no"
-            echo "admin rights, no Python needed. See the [user guide](docs/USER_GUIDE.md)."
+            echo "anywhere, double-click **SBCO Reconciliation** (the application file)."
+            echo "No installer, no admin rights, no Python needed. See the"
+            echo "[user guide](docs/USER_GUIDE.md)."
           } >> dist/RELEASE_NOTES.md
 
       - name: Point the release tag at the built commit
