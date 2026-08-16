@@ -7,6 +7,17 @@ defects found in the review of the original designed out rather than patched.
 
 ## Install
 
+**End users on Windows** do not install anything: each release ships
+`SBCO-Reconciliation-<version>-windows-x64.zip`. Extract it anywhere -
+Desktop, Documents, a shared drive - and double-click
+**SBCO Reconciliation.bat** inside. No administrator rights, no Python on the
+PC, nothing added to PATH; the folder carries its own runtime (python.org's
+embeddable CPython). Upgrading is replacing the folder - the data lives in
+`%LOCALAPPDATA%\SBCO`, so it survives. See `packaging/README.md` for how the
+zip is built and why it is a folder rather than a single .exe.
+
+**From source** (any OS):
+
 ```bash
 python -m pip install -e ".[dev,xls]"
 python -m sbco_recon.cli doctor      # checks the whole environment
@@ -93,7 +104,9 @@ src/sbco_recon/
   webapp/         local server + the browser interface (no build step, no CDN)
   refdata/        3,006 account codes, 428 dashboard codes, 8 clearing pairs
                   recovered from the original workbook
-tests/            32 tests; those marked REGRESSION pin the legacy defects shut
+packaging/        builds the portable Windows zip (embeddable runtime, no
+                  installer); CI smoke-tests the bundled runtime end to end
+tests/            regression suites pinning the legacy defects and QA findings
 ```
 
 ## Supported upload formats
@@ -160,7 +173,7 @@ mismatch/cleared pairs (CBS, PLI/RPLI, IPPB, Other x Receipts/Payments).
 ## Tests
 
 ```bash
-pytest -q        # 128 passed
+pytest -q        # 137 passed
 pytest -q -O     # also passes with assertions stripped
 ```
 
