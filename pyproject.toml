@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sbco-recon"
+version = "2.6.0"
+description = "Cashbook-CBS reconciliation engine for India Post SBCO"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+dependencies = ["openpyxl>=3.1"]
+
+[project.optional-dependencies]
+xls = ["xlrd>=2.0"]          # legacy BIFF .xls downloads
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+sbco = "sbco_recon.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"sbco_recon.refdata" = ["*.json"]
+"sbco_recon.webapp" = ["static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

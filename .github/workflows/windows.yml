@@ -1,0 +1,134 @@
+name: windows
+
+# Runs the full test suite on real Windows, then assembles the portable
+# package and smoke-tests the *bundled* runtime (not the runner's Python)
+# end to end: doctor, load, reconcile, register, Table-3 export. The zip is
+# uploaded as a build artifact on every run and attached to the release when
+# a v* tag is pushed.
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Create a release with this tag (e.g. v2.6.0); leave empty for a plain build"
+        required: false
+        default: ""
+
+permissions:
+  contents: write   # the release step creates the tag and release
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: python -m pip install -e ".[dev,xls]" pyxlsb
+      - name: Test
+        run: python -m pytest -q
+      - name: Test with assertions stripped
+        run: python -O -m pytest -q
+
+  package:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build the portable package
+        run: python packaging/make_portable.py --out dist --keep-folder
+
+      - name: Smoke-test the bundled runtime
+        shell: bash
+        run: |
+          set -euxo pipefail
+          RT="dist/_bundle/runtime/python.exe"
+
+          # the launchers the clerk will double-click must be in the bundle
+          test -f "dist/_bundle/SBCO Reconciliation.bat"
+          test -f "dist/_bundle/sbco.bat"
+          test -f "dist/_bundle/README.txt"
+
+          # the bundled interpreter, not the runner's Python, from here on
+          "$RT" -m sbco_recon.cli doctor
+          "$RT" -m sbco_recon.cli --help > /dev/null
+
+          # a real round trip: load -> reconcile -> register -> export
+          printf 'DATE,SOL ID,ACCOUNT CODE,DESCRIPRTION,RECEIPT\n' > fin.csv
+          printf '31-07-2026,60001700,8001000100,POSB -Receipts,5000\n' >> fin.csv
+          export SBCO_DATA_DIR="$RUNNER_TEMP/sbco-smoke"
+          "$RT" -m sbco_recon.cli load fin.csv
+          "$RT" -m sbco_recon.cli reconcile --month Jul-2026
+          "$RT" -m sbco_recon.cli register --record --month Jul-2026
+          "$RT" -m sbco_recon.cli register --export table3-smoke.xlsx
+          test -f table3-smoke.xlsx
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SBCO-Reconciliation-windows-x64
+          path: |
+            dist/*.zip
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+
+      - name: Prepare release notes from the changelog
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          awk -v ver="$version" '
+            $0 ~ ("^## " ver) {on=1; next}
+            /^## / {on=0}
+            on {print}
+          ' CHANGELOG.md > dist/RELEASE_NOTES.md
+          test -s dist/RELEASE_NOTES.md || echo "See CHANGELOG.md." > dist/RELEASE_NOTES.md
+          {
+            echo ""
+            echo "---"
+            echo "**To use:** download \`SBCO-Reconciliation-*-windows-x64.zip\`, extract"
+            echo "anywhere, double-click **SBCO Reconciliation.bat**. No installer, no"
+            echo "admin rights, no Python needed. See the [user guide](docs/USER_GUIDE.md)."
+          } >> dist/RELEASE_NOTES.md
+
+      - name: Point the release tag at the built commit
+        # Without this, creating a release for a not-yet-existing tag lets the
+        # API default the tag to the repository's default branch - the release
+        # then points at code that was never built or tested.
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
+        uses: actions/github-script@v7
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        with:
+          script: |
+            const ref = `tags/${process.env.RELEASE_TAG}`;
+            try {
+              await github.rest.git.updateRef({
+                ...context.repo, ref, sha: context.sha, force: true });
+            } catch (error) {
+              if (error.status !== 404 && error.status !== 422) throw error;
+              await github.rest.git.createRef({
+                ...context.repo, ref: `refs/${ref}`, sha: context.sha });
+            }
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag || github.ref_name }}
+          target_commitish: ${{ github.sha }}
+          name: SBCO Reconciliation ${{ inputs.release_tag || github.ref_name }}
+          body_path: dist/RELEASE_NOTES.md
+          files: |
+            dist/*.zip
+            dist/SHA256SUMS.txt

@@ -1,0 +1,50 @@
+[
+ {
+  "category": "Other",
+  "side": "Receipts",
+  "mismatch_code": "8671003600",
+  "cleared_code": "8671003700"
+ },
+ {
+  "category": "IPPB",
+  "side": "Receipts",
+  "mismatch_code": "8671003200",
+  "cleared_code": "8671003300"
+ },
+ {
+  "category": "PLI/RPLI",
+  "side": "Receipts",
+  "mismatch_code": "8671002800",
+  "cleared_code": "8671002900"
+ },
+ {
+  "category": "CBS",
+  "side": "Receipts",
+  "mismatch_code": "8671002400",
+  "cleared_code": "8671002500"
+ },
+ {
+  "category": "CBS",
+  "side": "Payments",
+  "mismatch_code": "8671002600",
+  "cleared_code": "8671002700"
+ },
+ {
+  "category": "PLI/RPLI",
+  "side": "Payments",
+  "mismatch_code": "8671003000",
+  "cleared_code": "8671003100"
+ },
+ {
+  "category": "IPPB",
+  "side": "Payments",
+  "mismatch_code": "8671003400",
+  "cleared_code": "8671003500"
+ },
+ {
+  "category": "Other",
+  "side": "Payments",
+  "mismatch_code": "8671003800",
+  "cleared_code": "8671003900"
+ }
+]
