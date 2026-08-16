@@ -50,25 +50,43 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          RT="dist/_bundle/runtime/python.exe"
+          EXE="dist/_bundle/SBCO Reconciliation.exe"
 
-          # the launchers the clerk will double-click must be in the bundle
-          test -f "dist/_bundle/SBCO Reconciliation.bat"
+          # what the clerk receives must all be in the bundle
+          test -f "$EXE"
           test -f "dist/_bundle/sbco.bat"
           test -f "dist/_bundle/README.txt"
+          test -f "dist/_bundle/LICENSE.txt"
+          test -f "dist/_bundle/PYTHON-LICENSE.txt"
+          test ! -f "dist/_bundle/python.exe"
+
+          # the renamed interpreter still carries a valid PSF signature
+          powershell -Command "
+            \$sig = Get-AuthenticodeSignature -FilePath 'dist/_bundle/SBCO Reconciliation.exe'
+            Write-Host ('signature: ' + \$sig.Status + ' / ' + \$sig.SignerCertificate.Subject)
+            if (\$sig.Status -ne 'Valid') { exit 1 }"
+
+          # the renamed exe boots and sees the vendored packages
+          "$EXE" -c "import sys, sbco_recon, openpyxl, xlrd, pyxlsb; print(sys.version, sbco_recon.__version__)"
+
+          # the double-click path: bare start fires the autostart hook
+          # (captured, not piped: grep -q exiting early would SIGPIPE the
+          # exe and fail the step under pipefail)
+          AUTOSTART_OUT=$(SBCO_AUTOSTART_CHECK=1 "$EXE" < /dev/null)
+          grep -q "SBCO-AUTOSTART-OK" <<< "$AUTOSTART_OUT"
 
           # the bundled interpreter, not the runner's Python, from here on
-          "$RT" -m sbco_recon.cli doctor
-          "$RT" -m sbco_recon.cli --help > /dev/null
+          "$EXE" -m sbco_recon.cli doctor
+          "$EXE" -m sbco_recon.cli --help > /dev/null
 
           # a real round trip: load -> reconcile -> register -> export
           printf 'DATE,SOL ID,ACCOUNT CODE,DESCRIPRTION,RECEIPT\n' > fin.csv
           printf '31-07-2026,60001700,8001000100,POSB -Receipts,5000\n' >> fin.csv
           export SBCO_DATA_DIR="$RUNNER_TEMP/sbco-smoke"
-          "$RT" -m sbco_recon.cli load fin.csv
-          "$RT" -m sbco_recon.cli reconcile --month Jul-2026
-          "$RT" -m sbco_recon.cli register --record --month Jul-2026
-          "$RT" -m sbco_recon.cli register --export table3-smoke.xlsx
+          "$EXE" -m sbco_recon.cli load fin.csv
+          "$EXE" -m sbco_recon.cli reconcile --month Jul-2026
+          "$EXE" -m sbco_recon.cli register --record --month Jul-2026
+          "$EXE" -m sbco_recon.cli register --export table3-smoke.xlsx
           test -f table3-smoke.xlsx
 
       - name: Upload artifact

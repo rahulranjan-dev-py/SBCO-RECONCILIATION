@@ -1,15 +1,18 @@
 """The portable-Windows-package builder.
 
 The parts that decide whether the bundle works on the clerk's PC - the ._pth
-rewrite that makes vendored packages visible, the launcher wiring, and the
-completeness check - are tested here without any network. The full assembly
-(pip vendoring + zip) runs in the Windows CI job, which then smoke-tests the
-bundled runtime itself.
+rewrite that makes vendored packages visible, the renamed-interpreter entry
+point with its double-click hook, and the completeness check - are tested
+here without any network. The full assembly (pip vendoring + zip) runs in
+the Windows CI job, which then smoke-tests the bundled runtime itself,
+including the double-click autostart path.
 """
 
 from __future__ import annotations
 
 import importlib.util
+import subprocess
+import sys
 import zipfile
 from pathlib import Path
 
@@ -61,17 +64,78 @@ def test_pth_missing_or_ambiguous_fails(tmp_path):
         mp.rewrite_pth(tmp_path / "runtime")
 
 
-# ─────────────────────────────────────────────────── launchers and runtime
+# ──────────────────────────────────────────── the double-click entry point
 
-def test_launchers_use_the_bundled_runtime_only():
-    # %~dp0 anchors both launchers to the bundle folder: whatever Python is or
+def test_cli_launcher_targets_the_renamed_exe():
+    # %~dp0 anchors the launcher to the bundle folder: whatever Python is or
     # is not installed on the PC must never be consulted.
-    for launcher in (mp.LAUNCHER_GUI, mp.LAUNCHER_CLI):
-        assert r"%~dp0runtime\python.exe" in launcher
-        assert "py -3" not in launcher and "where " not in launcher
-    assert "-m sbco_recon.cli gui" in mp.LAUNCHER_GUI
-    assert "doctor" in mp.LAUNCHER_GUI          # failure path self-diagnoses
-    assert "%*" in mp.LAUNCHER_CLI              # CLI form passes arguments on
+    assert r'"%~dp0SBCO Reconciliation.exe"' in mp.LAUNCHER_CLI
+    assert "-m sbco_recon.cli" in mp.LAUNCHER_CLI
+    assert "%*" in mp.LAUNCHER_CLI              # passes arguments on
+
+
+def _run_sitecustomize_probe(tmp_path, *, argv, exe_name, env=None):
+    """Import the bundle's sitecustomize under controlled sys state and
+    report what it did: 'gui', 'check', or 'none'."""
+    site = tmp_path / "site"
+    site.mkdir(exist_ok=True)
+    (site / "sitecustomize_probe.py").write_text(
+        mp.SITECUSTOMIZE, encoding="ascii")
+    probe = tmp_path / "probe.py"
+    probe.write_text(f"""
+import sys, types
+sys.argv = {argv!r}
+sys.executable = {exe_name!r}
+calls = []
+fake_cli = types.ModuleType("sbco_recon.cli")
+fake_cli.main = lambda args: calls.append(args) or 0
+fake_pkg = types.ModuleType("sbco_recon")
+fake_pkg.cli = fake_cli
+sys.modules["sbco_recon"] = fake_pkg
+sys.modules["sbco_recon.cli"] = fake_cli
+sys.path.insert(0, {str(site)!r})
+try:
+    import sitecustomize_probe
+except SystemExit:
+    pass
+print("GUI" if calls else "NOGUI")
+""", encoding="utf-8")
+    result = subprocess.run(
+        [sys.executable, "-I", str(probe)], capture_output=True, text=True,
+        env={**__import__("os").environ, **(env or {})}, timeout=30)
+    assert result.returncode == 0, result.stderr
+    return result.stdout
+
+
+def test_hook_fires_only_on_a_bare_start_of_the_bundle_exe(tmp_path):
+    launched = _run_sitecustomize_probe(
+        tmp_path, argv=[""], exe_name="C:/x/SBCO Reconciliation.exe")
+    assert "GUI" in launched and "NOGUI" not in launched
+
+
+@pytest.mark.parametrize("argv", [["-m", "sbco_recon.cli"], ["-c"], ["script.py"]])
+def test_hook_ignores_scripted_invocations(tmp_path, argv):
+    assert "NOGUI" in _run_sitecustomize_probe(
+        tmp_path, argv=argv, exe_name="C:/x/SBCO Reconciliation.exe")
+
+
+def test_hook_ignores_a_normally_named_interpreter(tmp_path):
+    assert "NOGUI" in _run_sitecustomize_probe(
+        tmp_path, argv=[""], exe_name="C:/x/python.exe")
+
+
+def test_hook_escape_hatch(tmp_path):
+    assert "NOGUI" in _run_sitecustomize_probe(
+        tmp_path, argv=[""], exe_name="C:/x/SBCO Reconciliation.exe",
+        env={"SBCO_NO_AUTOSTART": "1"})
+
+
+def test_hook_check_mode_prints_marker_instead_of_launching(tmp_path):
+    out = _run_sitecustomize_probe(
+        tmp_path, argv=[""], exe_name="C:/x/SBCO Reconciliation.exe",
+        env={"SBCO_AUTOSTART_CHECK": "1"})
+    assert "SBCO-AUTOSTART-OK" in out
+    assert "NOGUI" in out          # marker path exits before launching
 
 
 def test_bundle_readme_is_plain_ascii():
@@ -79,6 +143,7 @@ def test_bundle_readme_is_plain_ascii():
     text.encode("ascii")                        # Notepad-safe on any Windows
     assert "double-click" in text.lower()
     assert "not in this folder" in text.lower() # where the data lives
+    assert "Unblock" in text                    # the mark-of-the-web recovery
 
 
 def test_runtime_zip_verification_rejects_wrong_hash(tmp_path, monkeypatch):
@@ -90,21 +155,37 @@ def test_runtime_zip_verification_rejects_wrong_hash(tmp_path, monkeypatch):
         mp.verify_runtime_zip(payload)
 
 
+def test_install_runtime_renames_exe_and_preserves_psf_licence(tmp_path):
+    payload = tmp_path / "runtime.zip"
+    with zipfile.ZipFile(payload, "w") as zf:
+        zf.writestr("python.exe", b"MZ")
+        zf.writestr("python312.dll", b"MZ")
+        zf.writestr("python312._pth", "python312.zip\n.\n#import site\n")
+        zf.writestr("LICENSE.txt", "PSF LICENSE")
+    bundle = tmp_path / "bundle"
+    mp.install_runtime(payload, bundle)
+    assert (bundle / mp.APP_EXE).read_bytes() == b"MZ"
+    assert not (bundle / "python.exe").exists()
+    assert (bundle / "PYTHON-LICENSE.txt").read_text() == "PSF LICENSE"
+    assert not (bundle / "LICENSE.txt").exists()   # ours is written later
+
+
 # ───────────────────────────────────────────────────── completeness check
 
 def make_fake_bundle(tmp_path) -> Path:
     bundle = tmp_path / "bundle"
-    site = bundle / "runtime" / "Lib" / "site-packages"
+    site = bundle / "Lib" / "site-packages"
     for rel in ("sbco_recon/cli.py", "sbco_recon/refdata/account_codes.json",
                 "sbco_recon/webapp/static/index.html", "openpyxl/__init__.py",
                 "xlrd/__init__.py", "pyxlsb/__init__.py"):
         target = site / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text("x")
-    (bundle / "runtime" / "python.exe").write_bytes(b"MZ")
-    (bundle / "runtime" / "python312._pth").write_text(
+    (site / "sitecustomize.py").write_text(mp.SITECUSTOMIZE)
+    (bundle / mp.APP_EXE).write_bytes(b"MZ")
+    (bundle / "python312.dll").write_bytes(b"MZ")
+    (bundle / "python312._pth").write_text(
         "python312.zip\n.\nLib\\site-packages\nimport site\n")
-    (bundle / "SBCO Reconciliation.bat").write_text(mp.LAUNCHER_GUI)
     (bundle / "sbco.bat").write_text(mp.LAUNCHER_CLI)
     (bundle / "README.txt").write_text("x")
     (bundle / "LICENSE.txt").write_text("MIT License")
@@ -117,10 +198,29 @@ def test_check_bundle_accepts_a_complete_bundle(tmp_path):
 
 def test_check_bundle_names_whats_missing(tmp_path):
     bundle = make_fake_bundle(tmp_path)
-    (bundle / "runtime" / "Lib" / "site-packages" / "sbco_recon"
+    (bundle / "Lib" / "site-packages" / "sbco_recon"
      / "refdata" / "account_codes.json").unlink()
     with pytest.raises(SystemExit, match="account_codes.json"):
         mp.check_bundle(bundle)
+
+
+def test_check_bundle_rejects_a_leftover_python_exe(tmp_path):
+    bundle = make_fake_bundle(tmp_path)
+    (bundle / "python.exe").write_bytes(b"MZ")
+    with pytest.raises(SystemExit, match="rename"):
+        mp.check_bundle(bundle)
+
+
+def test_check_bundle_requires_the_hook_and_import_site(tmp_path):
+    bundle = make_fake_bundle(tmp_path)
+    (bundle / "Lib" / "site-packages" / "sitecustomize.py").unlink()
+    with pytest.raises(SystemExit, match="sitecustomize"):
+        mp.check_bundle(bundle)
+
+    bundle2 = make_fake_bundle(tmp_path / "b2")
+    (bundle2 / "python312._pth").write_text("python312.zip\n.\nLib\\site-packages\n")
+    with pytest.raises(SystemExit, match="import site"):
+        mp.check_bundle(bundle2)
 
 
 def test_zip_bundle_writes_checksums(tmp_path):
@@ -137,4 +237,4 @@ def test_zip_bundle_writes_checksums(tmp_path):
         assert all(n.startswith("SBCO-Reconciliation-9.9.9-windows-x64/")
                    for n in names)
         assert ("SBCO-Reconciliation-9.9.9-windows-x64/"
-                "SBCO Reconciliation.bat") in names
+                "SBCO Reconciliation.exe") in names

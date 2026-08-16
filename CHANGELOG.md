@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.6.1 — Smart App Control compatibility
+
+- The Windows bundle's entry point is now **SBCO Reconciliation.exe** — the
+  PSF-signed Python interpreter itself, renamed (Authenticode signatures
+  cover content, not names). Field testing showed Smart App Control, which
+  ships enabled on new Windows 11 machines, hard-blocks internet-downloaded
+  `.bat` files with no override; signed executables are allowed. A guarded
+  `sitecustomize` hook launches the GUI only on a bare double-click
+  (`sys.argv == ['']` and an sbco-named exe); `-m`, `-c` and script runs
+  pass through untouched, and `SBCO_NO_AUTOSTART=1` disables the hook.
+- Runtime files moved to the bundle root (the interpreter must sit beside
+  its DLL and `._pth`); the runtime's own PSF licence is preserved as
+  `PYTHON-LICENSE.txt`. `sbco.bat` remains for command-line use on machines
+  without Smart App Control.
+- CI now verifies the renamed exe's Authenticode signature is still valid,
+  exercises the double-click autostart path, and runs the full CLI round
+  trip through the renamed exe.
+- Documentation: "If Windows blocks something" guidance in the bundle
+  README, the user guide, and the troubleshooting table.
+
 ## 2.6.0 — Windows packaging
 
 - Released under the MIT license; LICENSE.txt ships inside the Windows bundle.

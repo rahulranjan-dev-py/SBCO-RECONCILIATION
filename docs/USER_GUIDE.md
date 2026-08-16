@@ -10,13 +10,21 @@ background is assumed.
 
 Download `SBCO-Reconciliation-<version>-windows-x64.zip`, extract it anywhere
 you like (Desktop, Documents, a shared drive), open the folder and double-click
-**SBCO Reconciliation.bat**. The tool opens in your web browser.
+**SBCO Reconciliation** (the application file). The tool opens in your web
+browser.
 
 - You do **not** need administrator rights.
 - You do **not** need Python or anything else installed.
 - Nothing leaves your PC: the tool runs entirely offline and only your own
   browser can reach it.
 - Keep the black window open while you work; close it when you are done.
+
+**If Windows blocks something:** Windows marks downloaded files and its Smart
+App Control / SmartScreen features block unknown *scripts* (like `.bat`
+files) — which is why the tool starts from the signed application file, not a
+script. If Windows still warns when you start it, choose *More info → Run
+anyway*; or clear the download mark first: right-click the downloaded `.zip`
+→ Properties → tick **Unblock** → OK, then extract again.
 
 Your data is stored in your Windows user profile
 (`%LOCALAPPDATA%\SBCO`), **not** in the program folder. To upgrade to a new
@@ -126,10 +134,18 @@ sbco.bat annexure --month Jul-2026          Annexure-IV Table-1
 sbco.bat doctor                             check the PC
 ```
 
+On PCs where Smart App Control blocks `.bat` scripts, use the application
+file's own command form instead — it is the same tool:
+
+```
+"SBCO Reconciliation.exe" -m sbco_recon.cli doctor
+```
+
 ## 10. If something looks wrong
 
 | What you see | What it means |
 |---|---|
+| "Smart App Control blocked a file" / "Windows protected your PC" | Windows blocking a downloaded script. Start the tool from **SBCO Reconciliation** (the application file), not a `.bat`. If the warning appears on the application itself, use *More info → Run anyway*, or right-click the downloaded `.zip` → Properties → **Unblock** → OK and extract again. |
 | Yellow "No … report covers N day(s)" | A day in the period has no upload. Figures for those dates are not reliable — load the missing report. |
 | "Account code … is not in the reference master" | The uploaded data uses a code the tool does not know. Verify it before putting it on a return. |
 | A file is *rejected* | The message names the reason — wrong report, unreadable column, or a file that is not what its name says. Re-download in Excel format (never PDF). |
