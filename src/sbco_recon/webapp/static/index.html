@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cashbook and CBS Reconciliation</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ── rail ─────────────────────────────────────────────── -->
+  <nav class="rail">
+    <div class="mark">
+      <span class="mark-rule"></span>
+      <span class="mark-name">Cashbook<br>&amp; CBS</span>
+      <span class="mark-sub">Reconciliation</span>
+    </div>
+
+    <ul class="nav" id="nav">
+      <li><button data-view="reconcile" class="on"><span class="k">01</span>Reconcile</button></li>
+      <li><button data-view="investigate"><span class="k">02</span>Investigate</button></li>
+      <li><button data-view="clearing"><span class="k">03</span>Clearing</button></li>
+      <li><button data-view="return"><span class="k">04</span>Monthly return</button></li>
+      <li><button data-view="files"><span class="k">05</span>Files</button></li>
+      <li><button data-view="settings"><span class="k">06</span>Settings</button></li>
+    </ul>
+
+    <div class="rail-foot">
+      <div class="office" id="railOffice">No office set</div>
+      <div class="folder" id="railFolder"></div>
+    </div>
+  </nav>
+
+  <!-- ── main ─────────────────────────────────────────────── -->
+  <main class="canvas">
+
+    <header class="bar">
+      <div class="period">
+        <label class="lbl">Period</label>
+        <div class="period-fields">
+          <input type="text" id="pStart" class="dt" placeholder="dd-mm-yyyy" autocomplete="off">
+          <span class="to">to</span>
+          <input type="text" id="pEnd" class="dt" placeholder="dd-mm-yyyy" autocomplete="off">
+          <select id="pQuick" class="quick" aria-label="Quick period">
+            <option value="">Jump to…</option>
+            <option value="this-month">This month</option>
+            <option value="last-month">Last month</option>
+            <option value="this-quarter">This quarter</option>
+          </select>
+        </div>
+      </div>
+      <div class="bar-right">
+        <span class="qtr" id="qtrTag"></span>
+        <button class="btn btn-ghost" id="btnAdd">Add reports</button>
+      </div>
+    </header>
+
+    <div class="scroll" id="scroll">
+
+      <!-- ── RECONCILE ── -->
+      <section class="view on" data-view="reconcile">
+
+        <div class="balance" id="balance">
+          <div class="side side-f">
+            <span class="side-lbl">Finacle / CBS</span>
+            <span class="side-fig" id="balF">—</span>
+          </div>
+          <div class="verdict">
+            <span class="verdict-lbl" id="balLbl">Difference</span>
+            <span class="verdict-fig" id="balD">—</span>
+            <span class="verdict-note" id="balNote"></span>
+          </div>
+          <div class="side side-c">
+            <span class="side-lbl">Cash Book</span>
+            <span class="side-fig" id="balC">—</span>
+          </div>
+        </div>
+
+        <div id="alerts"></div>
+
+        <div class="tools">
+          <div class="seg" id="filterSeg">
+            <button data-filter="breaks" class="on">Breaks only</button>
+            <button data-filter="all">Every code</button>
+          </div>
+          <input type="search" id="find" class="find" placeholder="Find a code or description">
+          <div class="tools-right">
+            <button class="btn btn-ghost" id="btnExport">Export sheet</button>
+            <button class="btn btn-ghost" id="btnRecord">Save to register</button>
+          </div>
+        </div>
+
+        <div class="ledger" id="ledger"></div>
+      </section>
+
+      <!-- ── INVESTIGATE ── -->
+      <section class="view" data-view="investigate">
+        <h1 class="h1">Investigate a difference</h1>
+        <p class="lede">Pick an account code to see which day the break began, and
+          which office it came from.</p>
+
+        <div class="picker">
+          <input type="text" id="invCode" class="code-in" placeholder="Account code"
+                 list="codeList" autocomplete="off">
+          <datalist id="codeList"></datalist>
+          <button class="btn" id="btnInv">Trace it</button>
+        </div>
+        <div id="invDesc" class="inv-desc"></div>
+
+        <div class="split">
+          <div class="pane">
+            <h2 class="h2">Day by day</h2>
+            <div id="dwOut" class="pane-body"><p class="empty">Choose a code above.</p></div>
+          </div>
+          <div class="pane">
+            <h2 class="h2">Office by office</h2>
+            <div id="owOut" class="pane-body"><p class="empty">Choose a code above.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── CLEARING ── -->
+      <section class="view" data-view="clearing">
+        <h1 class="h1">Clearing accounts</h1>
+        <p class="lede">Each mismatch account paired against the account that clears it.
+          Anything outstanding has been flagged but not yet cleared.</p>
+        <div id="clrOut"></div>
+      </section>
+
+      <!-- ── RETURN ── -->
+      <section class="view" data-view="return">
+        <h1 class="h1">Monthly return to the PAO</h1>
+        <p class="lede">Annexure-IV Table-1, due by the 4th of each month.</p>
+
+        <div class="card">
+          <div class="field-row">
+            <div class="field">
+              <label class="lbl" for="anMonth">Month</label>
+              <input type="text" id="anMonth" class="dt" placeholder="Jul-2026">
+            </div>
+            <div class="field field-grow">
+              <label class="lbl">Reporting as</label>
+              <div class="readout" id="anWho">Not set</div>
+            </div>
+          </div>
+          <label class="check"><input type="checkbox" id="anAll">
+            Include codes that agree, not just the breaks</label>
+          <div class="card-foot">
+            <button class="btn btn-solid" id="btnAnnex">Generate the return</button>
+            <span class="hint" id="anHint"></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 class="h2">Approved transfer entries</h2>
+          <p class="lede-sm">Record a TE so the return shows the corrected position.</p>
+          <div class="field-row">
+            <div class="field"><label class="lbl" for="teMonth">Month</label>
+              <input type="text" id="teMonth" class="dt" placeholder="Jul-2026"></div>
+            <div class="field"><label class="lbl" for="teFrom">From code</label>
+              <input type="text" id="teFrom" class="code-in sm"></div>
+            <div class="field"><label class="lbl" for="teTo">To code</label>
+              <input type="text" id="teTo" class="code-in sm"></div>
+            <div class="field"><label class="lbl" for="teAmt">Amount</label>
+              <input type="text" id="teAmt" class="code-in sm"></div>
+            <div class="field field-grow"><label class="lbl" for="teNote">Remarks</label>
+              <input type="text" id="teNote" class="txt"></div>
+          </div>
+          <div class="card-foot">
+            <button class="btn" id="btnTe">Add transfer entry</button>
+          </div>
+          <div id="teList"></div>
+        </div>
+      </section>
+
+      <!-- ── FILES ── -->
+      <section class="view" data-view="files">
+        <h1 class="h1">Files you have loaded</h1>
+        <p class="lede">Every upload is listed here. Undo one without touching the rest.</p>
+        <div id="filesOut"></div>
+      </section>
+
+      <!-- ── SETTINGS ── -->
+      <section class="view" data-view="settings">
+        <h1 class="h1">Settings</h1>
+
+        <div class="card">
+          <h2 class="h2">Your office</h2>
+          <p class="lede-sm">These three appear on the monthly return.</p>
+          <div class="field-row">
+            <div class="field"><label class="lbl" for="cfgDdo">DDO code</label>
+              <input type="text" id="cfgDdo" class="txt"></div>
+            <div class="field field-grow"><label class="lbl" for="cfgHo">HO name</label>
+              <input type="text" id="cfgHo" class="txt"></div>
+            <div class="field field-grow"><label class="lbl" for="cfgDiv">Division</label>
+              <input type="text" id="cfgDiv" class="txt"></div>
+          </div>
+          <div class="card-foot">
+            <button class="btn btn-solid" id="btnCfg">Save</button>
+            <span class="hint" id="cfgHint"></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 class="h2">Office list</h2>
+          <p class="lede-sm">Needed for office-wise reconciliation. Four columns:
+            OFFICE_NAME, OFFICE_ID, SOL_ID/BO_CODE, SOL_ID_GROUP.
+            Load a corrected list any time to replace this one.</p>
+          <div id="officesOut"></div>
+        </div>
+      </section>
+
+    </div><!-- /scroll -->
+  </main>
+</div>
+
+<!-- ── upload sheet ─────────────────────────────────────────── -->
+<div class="veil" id="veil" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-head">
+      <h2 id="sheetTitle">Add reports</h2>
+      <button class="x" id="sheetClose" aria-label="Close">&times;</button>
+    </div>
+    <div class="drop" id="drop">
+      <p class="drop-main">Drop your downloaded reports here</p>
+      <p class="drop-sub">Cashbook, GL IT2.0 reports, Accounting Details, or your
+        office list. The tool works out which is which.</p>
+      <button class="btn" id="btnBrowse">Choose files</button>
+      <input type="file" id="filesIn" multiple hidden
+             accept=".xls,.xlsx,.xlsb,.csv,.txt,.tsv">
+    </div>
+    <div class="results" id="results"></div>
+    <div class="sheet-foot">
+      <span class="tally" id="tally"></span>
+      <button class="btn btn-solid" id="sheetDone">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>window.SBCO_TOKEN = "__SBCO_TOKEN__";</script>
+<script src="/app.js"></script>
+</body>
+</html>

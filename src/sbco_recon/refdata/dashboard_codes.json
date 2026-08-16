@@ -1,0 +1,1714 @@
+[
+{
+"code": "8001001700",
+"description": "National Savings Scheme 1987-Receipts"
+},
+{
+"code": "8001001800",
+"description": "National Savings Scheme 1987-Payments"
+},
+{
+"code": "8001001900",
+"description": "National Savings Scheme 1992-Receipts"
+},
+{
+"code": "8001002000",
+"description": "National Savings Scheme 1992-Payments"
+},
+{
+"code": "8001002100",
+"description": "PO 5 Year CTD-Receipts"
+},
+{
+"code": "8001002200",
+"description": "PO 5 Year CTD-Payments"
+},
+{
+"code": "8001002300",
+"description": "PO 10 Year CTD -Receipts"
+},
+{
+"code": "8001002400",
+"description": "PO 10 Year CTD-Payments"
+},
+{
+"code": "8001002500",
+"description": "PO 15 Year CTD-Receipts"
+},
+{
+"code": "8001002600",
+"description": "PO 15 Year CTD-Payments"
+},
+{
+"code": "8001002900",
+"description": "PCFTD Account- Receipts"
+},
+{
+"code": "8001003000",
+"description": "PCFTD Account-Payments"
+},
+{
+"code": "8001003100",
+"description": "PCMIS Account-Receipts"
+},
+{
+"code": "8001003200",
+"description": "PCMIS Account-Payments"
+},
+{
+"code": "8001003300",
+"description": "POSB Fixed Deposits-Receipts"
+},
+{
+"code": "8001003400",
+"description": "POSB Fixed Deposits-Payments"
+},
+{
+"code": "8002000100",
+"description": "10 Year Defence Savings Certificates-Receipts"
+},
+{
+"code": "8002000200",
+"description": "10 Year Defence Savings Certificates-Payments"
+},
+{
+"code": "8002000500",
+"description": "Kisan Vikas Patra-Receipts"
+},
+{
+"code": "8002000600",
+"description": "Kisan Vikas Patra-Payments"
+},
+{
+"code": "8002000700",
+"description": "10 Year National Saving Certificates (IX Issue)-Receipts"
+},
+{
+"code": "8002000800",
+"description": "10 Year National Saving Certificates (IX Issue)-Payments"
+},
+{
+"code": "8002001100",
+"description": "10 Year Social Secuirty Certificate-Receipts"
+},
+{
+"code": "8002001200",
+"description": "10 Year Social Secuirty Certificate-Payments"
+},
+{
+"code": "8002001300",
+"description": "15 Year National Savings Certificate-Receipts"
+},
+{
+"code": "8002001400",
+"description": "15 Year National Savings Certificate-Payments"
+},
+{
+"code": "8002001500",
+"description": "12 Year National Plan Savings Certificates-Receipts"
+},
+{
+"code": "8002001600",
+"description": "12 Year National Plan Savings Certificates-Payments"
+},
+{
+"code": "8002001700",
+"description": "12 Year National Savings Certificates-Receipts"
+},
+{
+"code": "8002001800",
+"description": "12 Year National Savings Certificates-Payments"
+},
+{
+"code": "8002001900",
+"description": "10 Year National Savings Certificates(I-Issue)-Receipts"
+},
+{
+"code": "8002002000",
+"description": "10 Year National Savings Certificates(I-Issue)-Payments"
+},
+{
+"code": "8002002100",
+"description": "7 Year National Savings Certificates(I-Issue)-Receipts"
+},
+{
+"code": "8002002200",
+"description": "7 Year National Savings Certificates(I-Issue)-Payments"
+},
+{
+"code": "8002002300",
+"description": "7 Year National Savings Certificates(II-Issue)-Receipts"
+},
+{
+"code": "8002002400",
+"description": "7 Year National Savings Certificates(II-Issue)-Payments"
+},
+{
+"code": "8002002500",
+"description": "7 Year National Savings Certificates(III-Issue)-Receipts"
+},
+{
+"code": "8002002600",
+"description": "7 Year National Savings Certificates(III-Issue)-Payments"
+},
+{
+"code": "8002002700",
+"description": "7 Year National Savings Certificates(IV-Issue)-Receipts"
+},
+{
+"code": "8002002800",
+"description": "7 Year National Savings Certificates(IV-Issue)-Payments"
+},
+{
+"code": "8002002900",
+"description": "7 Year National Savings Certificates(V-Issue)-Receipts"
+},
+{
+"code": "8002003000",
+"description": "7 Year National Savings Certificates(V-Issue)-Payments"
+},
+{
+"code": "8002003100",
+"description": "7 Year National Savings Certificates(VI-Issue)-Receipts"
+},
+{
+"code": "8002003200",
+"description": "7 Year National Savings Certificates(VI-Issue)-Payments"
+},
+{
+"code": "8002003300",
+"description": "6 Year National Savings Certificates (VII Issue)-Receipts"
+},
+{
+"code": "8002003400",
+"description": "6 Year National Savings Certificates (VII Issue)-Payments"
+},
+{
+"code": "8002003500",
+"description": "Indra Vikas Patra-Receipts-Receipts"
+},
+{
+"code": "8002003700",
+"description": "5 Year Post Office Cash Certificates-Receipts"
+},
+{
+"code": "8002003800",
+"description": "5 Year Post Office Cash Certificates-Payments"
+},
+{
+"code": "8002003900",
+"description": "5 Year National Savings Certificates-Receipts"
+},
+{
+"code": "8002004000",
+"description": "5 Year National Savings Certificates-Payments"
+},
+{
+"code": "8002004100",
+"description": "10 Year National Plan Certificate-Receipts"
+},
+{
+"code": "8002004200",
+"description": "10 Year National Plan Certificate-Payments"
+},
+{
+"code": "8002004300",
+"description": "12 Year National Plan Savings Certificate-Receipts"
+},
+{
+"code": "8002004400",
+"description": "12 Year National Plan Savings Certificate-Payments"
+},
+{
+"code": "8002004500",
+"description": "Mahila Samman Savings Certificate-Receipts"
+},
+{
+"code": "8002004700",
+"description": "12 Year National Defence Certificate-Receipts"
+},
+{
+"code": "8002004800",
+"description": "12 Year National Defence Certificate-Payments"
+},
+{
+"code": "8002004900",
+"description": "10 Year Defence Deposit Certificates-Receipts"
+},
+{
+"code": "8002005000",
+"description": "10 Year Defence Deposit Certificates-Payments"
+},
+{
+"code": "8002005100",
+"description": "National Development Bonds-Receipts"
+},
+{
+"code": "8002005200",
+"description": "National Development Bonds-Payments"
+},
+{
+"code": "8008000145",
+"description": "Post Office Saving Bank Deposits Interest"
+},
+{
+"code": "8008000245",
+"description": "Fixed And Time Deposits Interest"
+},
+{
+"code": "8008000745",
+"description": "Cumulative Time Deposit Interest"
+},
+{
+"code": "8008000845",
+"description": "Five Year Cumulative Time Deposits Interest"
+},
+{
+"code": "8008000945",
+"description": "Ten Year Cumulatiave Time Deposits Interest"
+},
+{
+"code": "8008001045",
+"description": "Fifteen Year Cumulative Time Deposits Interest"
+},
+{
+"code": "8008001245",
+"description": "National Savings Scheme 1987 Interest"
+},
+{
+"code": "8008001445",
+"description": "National Savings Scheme1992 Interest"
+},
+{
+"code": "8008001645",
+"description": "Sukanya Samridhi Account Interest"
+},
+{
+"code": "8008001745",
+"description": "PM Cares for Children Interest"
+},
+{
+"code": "8008001845",
+"description": "10 Year Defence Deposits Certificates Interest"
+},
+{
+"code": "8008001945",
+"description": "5 Year Po Cash Certificates Interest"
+},
+{
+"code": "8008002045",
+"description": "12 Year NSC Interest"
+},
+{
+"code": "8008002145",
+"description": "10 Year NSC Interest"
+},
+{
+"code": "8008002245",
+"description": "5 Year NSC Interest"
+},
+{
+"code": "8008002345",
+"description": "12 Year NDSC Interest"
+},
+{
+"code": "8008002445",
+"description": "10 Year PO DSC Interest"
+},
+{
+"code": "8008002545",
+"description": "National Development BondsInterest"
+},
+{
+"code": "8008002645",
+"description": "National Savings Annuity Certificates Interest"
+},
+{
+"code": "8008002745",
+"description": "Post Office National Plan Certificates Interest"
+},
+{
+"code": "8008002845",
+"description": "PO 10 Year National Plan Savings Certificates Interest"
+},
+{
+"code": "8008002945",
+"description": "PO 12 Year National Plan Savings Certificates Interest"
+},
+{
+"code": "8008003045",
+"description": "Post Office National Defence Certificates Interest"
+},
+{
+"code": "8008003145",
+"description": "7 Year NSC I Series Interest"
+},
+{
+"code": "8008003245",
+"description": "7 Year NSC IInd Issue Interest"
+},
+{
+"code": "8008003345",
+"description": "7 Year NSC IIIrd Issue Interest"
+},
+{
+"code": "8008003445",
+"description": "7 Year NSC IVth Issue Interest"
+},
+{
+"code": "8008003545",
+"description": "7 Year NSC Vth Issue Interest"
+},
+{
+"code": "8008003645",
+"description": "6 Year NSC Vith Issue Interest"
+},
+{
+"code": "8008003745",
+"description": "6 Year NSC VIIth Issue Interest"
+},
+{
+"code": "8008003845",
+"description": "10 Year SSC Interest"
+},
+{
+"code": "8008003945",
+"description": "Kisan Vikas Patra Interest"
+},
+{
+"code": "8008004245",
+"description": "NSC 9th Issue 10 years Interest"
+},
+{
+"code": "8008004545",
+"description": "Public Provident Fund Interest"
+},
+{
+"code": "8008004749",
+"description": "Payment of Commission To GDSBPM/SPM"
+},
+{
+"code": "8008005016",
+"description": "Cost of printing of AAR Books"
+},
+{
+"code": "8008005116",
+"description": "Cost of printing of POSB Cheque Books"
+},
+{
+"code": "8008005216",
+"description": "Cost of printing of ASLAAS-5 Cards"
+},
+{
+"code": "8008005400",
+"description": "Collection Charges Outstation Cheques"
+},
+{
+"code": "8009000100",
+"description": "GPF Ordinary Subscriptions And Recoveries-Receipts"
+},
+{
+"code": "8009000200",
+"description": "GPF Ordinary Subscriptions And Recoveries-Payments"
+},
+{
+"code": "8011000100",
+"description": "CGEGIS_Contributions"
+},
+{
+"code": "8011000200",
+"description": "CGEGIS_Savings Fund Payment"
+},
+{
+"code": "8011000300",
+"description": "CGEGIS_Insurance Fund Payment"
+},
+{
+"code": "8011000400",
+"description": "EDAGIS_Savings Fund Payment"
+},
+{
+"code": "8011000500",
+"description": "EDAGIS_Insurance Fund Payment"
+},
+{
+"code": "8011000600",
+"description": "GDSGIS_Savings Fund Payment"
+},
+{
+"code": "8011000700",
+"description": "GDSGIS_Insurance Fund Payment"
+},
+{
+"code": "8012000100",
+"description": "Special Deposits and Accounts CDS (ITP1963)-Receipts"
+},
+{
+"code": "8012000200",
+"description": "Special Deposits and Accounts CDS (ITP1963)-Payments"
+},
+{
+"code": "8011000900",
+"description": "GDSGIS_Savings Fund _Receipt"
+},
+{
+"code": "8446005700",
+"description": "RCM - CGST Banking & Finance Services-Receipts"
+},
+{
+"code": "8446005800",
+"description": "RCM - CGST Banking & Finance Services-Payments"
+},
+{
+"code": "8446005900",
+"description": "RCM - SGST Banking & Finance Services-Receipts"
+},
+{
+"code": "8446006000",
+"description": "RCM - SGST Banking & Finance Services-Payments"
+},
+{
+"code": "8446006100",
+"description": "RCM - UTGST Banking & Finance Services-Receipts"
+},
+{
+"code": "8446006200",
+"description": "RCM - UTGST Banking & Finance Services-Payments"
+},
+{
+"code": "8446008900",
+"description": "CGST TDS Banking & Finance Services-Receipts"
+},
+{
+"code": "8446009000",
+"description": "CGST TDS Banking & Finance Services-Payments"
+},
+{
+"code": "8446009100",
+"description": "SGST TDS Banking & Finance Services-Receipts"
+},
+{
+"code": "8446009200",
+"description": "SGST TDS Banking & Finance Services-Payments"
+},
+{
+"code": "8446009300",
+"description": "UTGST TDS Banking & Finance Services-Receipts"
+},
+{
+"code": "8446009400",
+"description": "UTGST TDS Banking & Finance Services-Payments"
+},
+{
+"code": "8446009500",
+"description": "IGST TDS Banking & Finance Services-Receipts"
+},
+{
+"code": "8446009600",
+"description": "IGST TDS Banking & Finance Services-Payments"
+},
+{
+"code": "8446013300",
+"description": "Amt refunded to bulk customer at the time of closur of A/cs"
+},
+{
+"code": "8446013400",
+"description": "Amount Withdrawn From SB A/C Under PMJJBY"
+},
+{
+"code": "8446013500",
+"description": "Amount Remiited To LIC Under PMJJBY"
+},
+{
+"code": "8446013600",
+"description": "Deduct PMJJBY Revenue to be transferred to MH 1201"
+},
+{
+"code": "8446013700",
+"description": "Deduct Incentive Paid on PMJJBY"
+},
+{
+"code": "8446013800",
+"description": "Amount Withdrawan From SB A/C Under PMSBY"
+},
+{
+"code": "8446013900",
+"description": "Amount Remitted To Lic On A/C Of PMSBY"
+},
+{
+"code": "8446014000",
+"description": "Deduct PMSBY Revenue to be transferred to MH 1201"
+},
+{
+"code": "8446014100",
+"description": "Deduct Incentive Paid on PMSBY"
+},
+{
+"code": "8446014200",
+"description": "Individual Contribution for APY including Penalty"
+},
+{
+"code": "8446014300",
+"description": "Amount of Government Contribution credit for APY"
+},
+{
+"code": "8446014400",
+"description": "Net Amount remitted to NSDL on account of APY"
+},
+{
+"code": "8446014500",
+"description": "APY Revenue to be transferred to MH 1201"
+},
+{
+"code": "8553000100",
+"description": "Payment to NFS Sponsor Bank Payments"
+},
+{
+"code": "8553000200",
+"description": "NFS Sponsor Bank Payments Cleared"
+},
+{
+"code": "8553000300",
+"description": "Payment to Power Reset Frauds"
+},
+{
+"code": "8553000400",
+"description": "Power Reset Fraud payments -Cleared"
+},
+{
+"code": "8553000500",
+"description": "Payment to EJ Manipulation Frauds"
+},
+{
+"code": "8553000600",
+"description": "EJ Manipulation Frauds Payments-Cleared"
+},
+{
+"code": "8553000700",
+"description": "Payment to Card cloning Frauds"
+},
+{
+"code": "8553000800",
+"description": "Card cloning Frauds Payments-Cleared"
+},
+{
+"code": "8553001100",
+"description": "Payment of Fraudlent Amount-POSB"
+},
+{
+"code": "8553001200",
+"description": "Recovery of Fraudlent Amount-POSB"
+},
+{
+"code": "9421001900",
+"description": "Reversal of IT TDS on Cash withdrawals under 194-N"
+},
+{
+"code": "9421002000",
+"description": "Reversal of IT TDS on withdrawal of NSS under Section-194 EE"
+},
+{
+"code": "8553002900",
+"description": "Balance with SBI Current Account-NEFT/RTGS-Payments"
+},
+{
+"code": "8553003000",
+"description": "Balance with SBI Current Account-NEFT/RTGS-Cleared"
+},
+{
+"code": "8661001100",
+"description": "UTGST-Collection on Banking and Finance Services"
+},
+{
+"code": "8661001200",
+"description": "IGST-Collection on Banking and Finance Services"
+},
+{
+"code": "8661001300",
+"description": "Remittance CGST-Banking & Finance Services"
+},
+{
+"code": "8661001400",
+"description": "Remittance SGST-Banking & Finance Services"
+},
+{
+"code": "8661001500",
+"description": "Remittance UTGST-Banking & Finance Services"
+},
+{
+"code": "8661001600",
+"description": "Remittance IGST-Banking & Finance Services"
+},
+{
+"code": "8661004100",
+"description": "Settlement Suspense Account"
+},
+{
+"code": "8661004200",
+"description": "Settlement Suspense Account_DFC"
+},
+{
+"code": "8661004300",
+"description": "Public Sector Bank Suspense- Drawings from Bank"
+},
+{
+"code": "8661004400",
+"description": "Public Sector Bank Suspense- Drawings from Bank-DFC"
+},
+{
+"code": "8661004500",
+"description": "Public Sector Bank Suspense-Remittance to Bank"
+},
+{
+"code": "8661004600",
+"description": "Public Sector Bank Suspense-Remittance to Bank-DFD"
+},
+{
+"code": "8661004700",
+"description": "Reserve Bank Suspense- Drawings From Bank"
+},
+{
+"code": "8661004800",
+"description": "Reserve Bank Suspense- Drawings From Bank-DFC"
+},
+{
+"code": "8661004900",
+"description": "Reserve Bank Suspense- Remittance to Bank"
+},
+{
+"code": "8661005000",
+"description": "Reserve Bank Suspense-Remittance to Bank-DFD"
+},
+{
+"code": "8661005100",
+"description": "Credit Contra Suspense"
+},
+{
+"code": "8661005200",
+"description": "Credit Contra Suspense-DFC"
+},
+{
+"code": "8661005300",
+"description": "Debit Contra Suspense"
+},
+{
+"code": "8661005400",
+"description": "Debit Contra Suspense-DFD"
+},
+{
+"code": "8661005500",
+"description": "NFS Pool Account for ATM"
+},
+{
+"code": "8661005600",
+"description": "NFS Pool Account for ATM-DFD"
+},
+{
+"code": "8661006400",
+"description": "NEFT outward payable pool account-DFC"
+},
+{
+"code": "8661006500",
+"description": "NEFT inward receivable pool account"
+},
+{
+"code": "8661006600",
+"description": "NEFT inward receivable pool account-DFD"
+},
+{
+"code": "8661006700",
+"description": "NEFT inward return pool account"
+},
+{
+"code": "8661006800",
+"description": "NEFT inward return pool account-DFC"
+},
+{
+"code": "8661007000",
+"description": "RTGS outward payable pool account-DFC"
+},
+{
+"code": "8661007100",
+"description": "RTGS inward receivable pool account"
+},
+{
+"code": "8661007300",
+"description": "RTGS inward return pool account"
+},
+{
+"code": "8661007400",
+"description": "RTGS inward return pool account-DFC"
+},
+{
+"code": "8661007500",
+"description": "Operational risk loss account"
+},
+{
+"code": "8661007600",
+"description": "Operational risk loss account-DFD"
+},
+{
+"code": "8661007700",
+"description": "NEFT/RTGS Parking Account"
+},
+{
+"code": "8661007800",
+"description": "NEFT/RTGS Parking Account-DFD"
+},
+{
+"code": "8670000100",
+"description": "Drawings from Bank_ Cheque"
+},
+{
+"code": "8670000200",
+"description": "Drawings from Bank _Electronic Mode"
+},
+{
+"code": "8670000300",
+"description": "Drawing From Bank- DFC"
+},
+{
+"code": "8670000400",
+"description": "Drawing From Treasury"
+},
+{
+"code": "8670000500",
+"description": "Drawing From Treasury- DFC"
+},
+{
+"code": "8670000600",
+"description": "Drawings from Bank-Write back Cheque"
+},
+{
+"code": "8671001400",
+"description": "Cheque sent"
+},
+{
+"code": "8671001500",
+"description": "Cheque received"
+},
+{
+"code": "8671001100",
+"description": "Short AM Cash"
+},
+{
+"code": "8671001200",
+"description": "Excess ATM Cash"
+},
+{
+"code": "8671002000",
+"description": "Vendor Payment to CBS- In transit"
+},
+{
+"code": "8671002100",
+"description": "Vendor Payment to CBS Cleared"
+},
+{
+"code": "8674000100",
+"description": "Security Amount Deposited with Courts"
+},
+{
+"code": "8674000200",
+"description": "Security Amount Deposited with Courts-Cleared"
+},
+{
+"code": "8675000100",
+"description": "Deposits with Reserve Bank (Post)- Receipts"
+},
+{
+"code": "8675000200",
+"description": "Deposits with Reserve Bank (Post)- Payments"
+},
+{
+"code": "8677000100",
+"description": "Remittance to Bank _Cash"
+},
+{
+"code": "8677000200",
+"description": "Remittance to Bank _Cleared Cheque"
+},
+{
+"code": "8677000300",
+"description": "Remittance to Bank _Electronic Mode"
+},
+{
+"code": "8677000400",
+"description": "Remmitance To Bank- DFD"
+},
+{
+"code": "8677000500",
+"description": "Remmitance To Treasury"
+},
+{
+"code": "8677000600",
+"description": "Remmitance To Treasury- DFD"
+},
+{
+"code": "8677000700",
+"description": "Remittance to Bank-e Payment return-eFPB"
+},
+{
+"code": "8671002400",
+"description": "CBS Data_Receipts_Mismatch"
+},
+{
+"code": "8671001000",
+"description": "ATM Cash Withdrawn"
+},
+{
+"code": "8782000500",
+"description": "RSAO_Remittances_Debit"
+},
+{
+"code": "8782000600",
+"description": "RSAO_Remittances_Credit"
+},
+{
+"code": "8782000700",
+"description": "RSAO_POSB_Debit"
+},
+{
+"code": "8782001000",
+"description": "RSAO_POSB_GRID_Credit"
+},
+{
+"code": "8782003600",
+"description": "CBS to PLI"
+},
+{
+"code": "8782003700",
+"description": "CBS to PLI Cleared"
+},
+{
+"code": "9421000600",
+"description": "IT TDS from interest on security under 193"
+},
+{
+"code": "9421000700",
+"description": "IT TDS from under section 192"
+},
+{
+"code": "9421000800",
+"description": "IT TDS on Cash withdrawals under 194-N"
+},
+{
+"code": "9421000900",
+"description": "IT TDS on Cash rent under 194-I"
+},
+{
+"code": "9421001100",
+"description": "IT TDS on withdrawal of NSS under Section-194 EE"
+},
+{
+"code": "9421001200",
+"description": "IT TDS Surcharge"
+},
+{
+"code": "9421001300",
+"description": "IT TDS Health and Education Cess"
+},
+{
+"code": "9421001400",
+"description": "IT TDS under Section 195"
+},
+{
+"code": "1201005300",
+"description": "Remuneration for workers for MGNREGA"
+},
+{
+"code": "1201005400",
+"description": "Interchange fee for interoperable ATM Transactions"
+},
+{
+"code": "1201006100",
+"description": "NEFT/RTGS Transaction Fee receivable from Banks"
+},
+{
+"code": "1201006400",
+"description": "ATM RePIN Request Charge Account"
+},
+{
+"code": "1201006500",
+"description": "SMS Alert Charge Account"
+},
+{
+"code": "1201006600",
+"description": "ATM insufficient Balance Transactions Charge"
+},
+{
+"code": "1201006700",
+"description": "Onus transaction Charges Account"
+},
+{
+"code": "1201012200",
+"description": "Revenue on account of PMJJBY"
+},
+{
+"code": "1201012300",
+"description": "Revenue on account of PMSBY"
+},
+{
+"code": "1201012400",
+"description": "Revenue on Atal Pension Yojana"
+},
+{
+"code": "3201068840",
+"description": "SB Allowance to PAs Working in SB Branches-Awards and Prizes"
+},
+{
+"code": "3201068949",
+"description": "SB Allowance to PAs Working in SB Branches-ORE"
+},
+{
+"code": "3201080828",
+"description": "Interchange fee account for ATM"
+},
+{
+"code": "3201080928",
+"description": "GST on interchange fee for ATM"
+},
+{
+"code": "3201081028",
+"description": "Interchange fee for POS"
+},
+{
+"code": "3201081128",
+"description": "GST on interchange fee for POS"
+},
+{
+"code": "3201081428",
+"description": "Switching fee for ATM"
+},
+{
+"code": "3201081528",
+"description": "GST on switching fee for ATM"
+},
+{
+"code": "3201081628",
+"description": "Switching fee for POS"
+},
+{
+"code": "3201081728",
+"description": "GST on switching fee for POS"
+},
+{
+"code": "3201082128",
+"description": "Commission payable to NBFC/NSC Agents Sovereign-PPSS"
+},
+{
+"code": "1201014000",
+"description": "Reversal of Interchange fee for interoperable ATM Txns"
+},
+{
+"code": "1201014100",
+"description": "Reversal of NEFT/RTGS Charges from customer"
+},
+{
+"code": "1201014200",
+"description": "Reversal of SMS Alert Charge Account"
+},
+{
+"code": "1201014300",
+"description": "Reversal of ATM Annual Maintenance Charge Account"
+},
+{
+"code": "1201014400",
+"description": "Reversal of Fee for Registration of second Nomination"
+},
+{
+"code": "1201014500",
+"description": "Reversal of POSB_Cheque Book Issuance Fee"
+},
+{
+"code": "1201014600",
+"description": "Reversal of POSB_Statement Generation Fee"
+},
+{
+"code": "1201014700",
+"description": "Reversal of Cheque Return Charges Inward"
+},
+{
+"code": "1201014800",
+"description": "Reversal of Cheque Return Charges outward"
+},
+{
+"code": "1201014900",
+"description": "Reversal of Penal Income/penal interest due to delayed Pmnt"
+},
+{
+"code": "1201015000",
+"description": "Reversal of POSB_Pledging Fee"
+},
+{
+"code": "1201015100",
+"description": "Reversal of Revenue on account of PMJJBY"
+},
+{
+"code": "2235000249",
+"description": "Reversal of Protected Savings Schemes-Other Revenue Expenses"
+},
+{
+"code": "3201136713",
+"description": "Reversal of Small Savings Work-Office Expenses"
+},
+{
+"code": "3201136828",
+"description": "Reversal of Small Savings Work-Professional Services"
+},
+{
+"code": "3201136964",
+"description": "Reversal of Small Savings Work-Write off of losses"
+},
+{
+"code": "3201137028",
+"description": "Reversal of Interchange fee account for ATM"
+},
+{
+"code": "3201137128",
+"description": "Reversal of Switching fee for ATM"
+},
+{
+"code": "3201137228",
+"description": "Reversal of GST on switching fee for ATM"
+},
+{
+"code": "3201137328",
+"description": "Reversal of NFS Penalty Expense"
+},
+{
+"code": "8008006245",
+"description": "Recovery of Post Office Saving Bank Deposits Interest"
+},
+{
+"code": "8008006345",
+"description": "Recovery of Fixed And Time Deposits Interest"
+},
+{
+"code": "8008006445",
+"description": "Recovery of One Year Time Deposits Interest"
+},
+{
+"code": "8008006545",
+"description": "Recovery of Two Year Time Deposits Interest"
+},
+{
+"code": "8008006645",
+"description": "Recovery of Three Year Time Deposits Interest"
+},
+{
+"code": "8008006745",
+"description": "Recovery of Five Year Time Deposits Interest"
+},
+{
+"code": "8008006845",
+"description": "Recovery of Five Year Cumulative Time Deposits Interest"
+},
+{
+"code": "8008006945",
+"description": "Recovery of Ten Year Cumulatiave Time Deposits Interest"
+},
+{
+"code": "8008007045",
+"description": "Recovery of Fifteen Year Cumulative Time Deposits Interest"
+},
+{
+"code": "8008007245",
+"description": "Recovery of National Savings Scheme 1987 Interest"
+},
+{
+"code": "8008007345",
+"description": "Recovery of Monthly Income Scheme Interest"
+},
+{
+"code": "8008007445",
+"description": "Recovery of National Savings Scheme1992 Interest"
+},
+{
+"code": "8008007645",
+"description": "Recovery of Sukanya Samridhi Account Interest"
+},
+{
+"code": "8008007745",
+"description": "Recovery of PM Cares for Children Interest"
+},
+{
+"code": "8008007845",
+"description": "Recovery of 10 Year Defence Deposits Certificates Interest"
+},
+{
+"code": "8008007945",
+"description": "Recovery of 5 Year Po Cash Certificates Interest"
+},
+{
+"code": "8008008045",
+"description": "Recovery of 12 Year NSC Interest"
+},
+{
+"code": "8008008145",
+"description": "Recovery of 10 Year NSC Interest"
+},
+{
+"code": "8008008245",
+"description": "Recovery of 5 Year NSC Interest"
+},
+{
+"code": "8008008345",
+"description": "Recovery of 12 Year NDSC Interest"
+},
+{
+"code": "8008008445",
+"description": "Recovery of National Development BondsInterest"
+},
+{
+"code": "8008008545",
+"description": "Recovery of National Savings Annuity Certificates Interest"
+},
+{
+"code": "8008008645",
+"description": "Recovery of 10 Yr National Plan Savings Certificate Interest"
+},
+{
+"code": "8008008745",
+"description": "Recovery of 12 Yr National Plan Savings Certificate Interest"
+},
+{
+"code": "8008008845",
+"description": "Recovery of 7 Year NSC I Series Interest"
+},
+{
+"code": "8008008945",
+"description": "Recovery of 7 Year NSC IInd Issue Interest"
+},
+{
+"code": "8008009045",
+"description": "Recovery of 7 Year NSC IIIrd Issue Interest"
+},
+{
+"code": "8008009145",
+"description": "Recovery of 7 Year NSC IVth Issue Interest"
+},
+{
+"code": "8008009245",
+"description": "Recovery of 7 Year NSC Vth Issue Interest"
+},
+{
+"code": "8008009345",
+"description": "Recovery of 6 Year NSC Vith Issue Interest"
+},
+{
+"code": "8008009445",
+"description": "Recovery of 6 Year NSC VIIth Issue Interest"
+},
+{
+"code": "8008009545",
+"description": "Recovery of 10 Year SSC Interest"
+},
+{
+"code": "8008009645",
+"description": "Recovery of Kisan Vikas Patra Interest"
+},
+{
+"code": "8008009745",
+"description": "Recovery of 6 Year NSC VIIIth Issue Interest"
+},
+{
+"code": "8008009845",
+"description": "Recovery of Indira Vikas Patra Interest"
+},
+{
+"code": "8008009945",
+"description": "Recovery of NSC 9th Issue 10 years Interest"
+},
+{
+"code": "8008010045",
+"description": "Recovery of Kisan Vikas Patra-2014-interest"
+},
+{
+"code": "8008010145",
+"description": "Recovery of Mahila Samman Savings Certificate Interest"
+},
+{
+"code": "8008010349",
+"description": "Reversal of Payment of Commission To SAS Agents"
+},
+{
+"code": "8008010449",
+"description": "Reversal of Payment of Commission To MPKBY Agents"
+},
+{
+"code": "8008010549",
+"description": "Reversal of Commission Paid To Agents for NSC"
+},
+{
+"code": "8008010600",
+"description": "Reversal of Fee for Issue of Duplicate Pass Book"
+},
+{
+"code": "8008010700",
+"description": "Reversal of Collection Charges Outstation Cheques"
+},
+{
+"code": "8008010800",
+"description": "Reversal of PPF Default Fee"
+},
+{
+"code": "8008010900",
+"description": "Reversal of Deduction on Account of Premature Withdrawals."
+},
+{
+"code": "8008011000",
+"description": "Reversal of SSA Default Fee"
+},
+{
+"code": "8008011100",
+"description": "Reversal of RD Rebate"
+},
+{
+"code": "8008011200",
+"description": "Reversal of Account Transfer Fee."
+},
+{
+"code": "8455001400",
+"description": "Reversal of Amount Receivable from IPPB-POSB (Sweep out)"
+},
+{
+"code": "8455001500",
+"description": "Reversal of Amount Payable to IPPB-POSB(Sweep In)"
+},
+{
+"code": "8661010300",
+"description": "Reversal of CGST-Collection on Banking and Finance Services"
+},
+{
+"code": "8661010400",
+"description": "Reversal of SGST-Collection on Banking and Finance Services"
+},
+{
+"code": "8661010500",
+"description": "Reversal of IGST-Collection on Banking and Finance Services"
+},
+{
+"code": "8661010600",
+"description": "Reversal of Remittance CGST-Banking & Finance Services"
+},
+{
+"code": "8661010700",
+"description": "Reversal of Remittance SGST-Banking & Finance Services"
+},
+{
+"code": "8661010800",
+"description": "Reversal of Remittance IGST-Banking & Finance Services"
+},
+{
+"code": "8670000700",
+"description": "Reversal of Drawings from Bank_ Cheque"
+},
+{
+"code": "8677000800",
+"description": "Reversal of Remittance to Bank _Cleared Cheque"
+},
+{
+"code": "8011000800",
+"description": "EDAGIS_Savings Fund_Receipt"
+},
+{
+"code": "8782004400",
+"description": "RSAO_ATM Cash_Debit"
+},
+{
+"code": "8782004500",
+"description": "RSAO_ATM Cash_Credit"
+},
+{
+"code": "8553003500",
+"description": "Advance to UPU-UPI-NIPL-Account"
+},
+{
+"code": "8553003600",
+"description": "Advance Utilized from UPU-UPI-NIPL Account"
+},
+{
+"code": "8553003700",
+"description": "Payment due from Foreign Designated Operator UPU-UPI"
+},
+{
+"code": "8553003800",
+"description": "Payment received from Foreign Designated Operator UPU-UPI"
+},
+{
+"code": "8782005000",
+"description": "RSAO_POSB_JSS_Amount received by CPRC"
+},
+{
+"code": "8782005100",
+"description": "RSAO_POSB_JSS_Amount remitted to CPRC"
+},
+{
+"code": "8782005200",
+"description": "RSAO_POSB_NEFT & RTGS_Amount received by CPRC"
+},
+{
+"code": "8782005300",
+"description": "RSAO_POSB_NEFT & RTGS_Amount remitted to CPRC"
+},
+{
+"code": "8671002600",
+"description": "CBS Data_Payments_Mismatch"
+},
+{
+"code": "8671003600",
+"description": "Other Data_Receipts_Mismatch"
+},
+{
+"code": "8671003800",
+"description": "Other Data_Payments_Mismatch"
+},
+{
+"code": "8009000300",
+"description": "Defence Services Personnel Provident Fund-Receipts"
+},
+{
+"code": "8009000400",
+"description": "Defence Services Personnel Provident Fund-Payments"
+},
+{
+"code": "8446015600",
+"description": "Advance Deposit-FO Wallet"
+},
+{
+"code": "8446015700",
+"description": "Advance Deposit-FO Wallet-Cleared"
+},
+{
+"code": "8671004100",
+"description": "Receipts pending for classification_Cleared"
+},
+{
+"code": "8671004200",
+"description": "Payments Pending for classification"
+},
+{
+"code": "8671004300",
+"description": "Payments Pending for classification_Cleared"
+},
+{
+"code": "8446002200",
+"description": "DBT Credit Failure_Cleared"
+},
+{
+"code": "8446002100",
+"description": "DBT Credit Failure"
+},
+{
+"code": "8671005000",
+"description": "POSB Payment Cheque issued"
+},
+{
+"code": "8671004000",
+"description": "Receipts Pending for classification"
+},
+{
+"code": "1201013600",
+"description": "POSB_Cheque Book Issuance Fee"
+},
+{
+"code": "1201013700",
+"description": "POSB_Statement Generation Fee"
+},
+{
+"code": "1201013800",
+"description": "POSB_Pledging Fee"
+},
+{
+"code": "1201006300",
+"description": "ATM Replacement Charge Account"
+},
+{
+"code": "1201006200",
+"description": "ATM Annual Maintenance Charge Account"
+},
+{
+"code": "8661000900",
+"description": "CGST-Collection on Banking and Finance Services"
+},
+{
+"code": "8661001000",
+"description": "SGST-Collection on Banking and Finance Services"
+},
+{
+"code": "1201006000",
+"description": "NEFT/RTGS Charges from customer"
+},
+{
+"code": "8008005300",
+"description": "Fee for Issue of Duplicate Pass Book"
+},
+{
+"code": "8008006000",
+"description": "PPF Default Fee"
+},
+{
+"code": "8008000445",
+"description": "Two Year Time Deposits Interest"
+},
+{
+"code": "8002003600",
+"description": "Indra Vikas Patra-Payments"
+},
+{
+"code": "8008004145",
+"description": "Indira Vikas Patra Interest"
+},
+{
+"code": "8008005600",
+"description": "Account Transfer Fee."
+},
+{
+"code": "8008006100",
+"description": "Refund of RD Default Fee"
+},
+{
+"code": "8782004900",
+"description": "RSAO- POSB IT TDS - Payments"
+},
+{
+"code": "9421000400",
+"description": "IT TDS from Interest Payments under 194-A"
+},
+{
+"code": "8008005900",
+"description": "SSA Default Fee"
+},
+{
+"code": "8008000545",
+"description": "Three Year Time Deposits Interest"
+},
+{
+"code": "8008010245",
+"description": "Recovery of Public Provident Fund Interest"
+},
+{
+"code": "8008005700",
+"description": "RD Default Fee"
+},
+{
+"code": "8782004800",
+"description": "RSAO\u00e2\u20ac\u201cPOSB IT TDS\u00e2\u20ac\u201c Receipts"
+},
+{
+"code": "9421000500",
+"description": "IT TDS from Commission, Brokerage under 194-H"
+},
+{
+"code": "8008000645",
+"description": "Five Year Time Deposits Interest"
+},
+{
+"code": "8008007145",
+"description": "Recovery of Post Office Recurring Deposits Interest"
+},
+{
+"code": "8008005500",
+"description": "Deduction on Account of Premature Withdrawals."
+},
+{
+"code": "8008001345",
+"description": "Monthly Income Scheme Interest"
+},
+{
+"code": "8008005800",
+"description": "RD Rebate"
+},
+{
+"code": "8008000345",
+"description": "One Year Time Deposits Interest"
+},
+{
+"code": "8008004949",
+"description": "Commission Paid To Agents for NSC"
+},
+{
+"code": "8671001800",
+"description": "HR to CBS- In transit"
+},
+{
+"code": "8671005100",
+"description": "POSB/SC Closure Proceeds through Cash"
+},
+{
+"code": "8008004649",
+"description": "Payment of Commission To SAS Agents"
+},
+{
+"code": "8671002200",
+"description": "PLI to CBS- In transit"
+},
+{
+"code": "8001002800",
+"description": "Sukanya Samriddhi Account-Payments"
+},
+{
+"code": "8671002300",
+"description": "PLI to CBS Cleared"
+},
+{
+"code": "8661006900",
+"description": "RTGS outward payable pool account"
+},
+{
+"code": "8008004849",
+"description": "Payment of Commission To MPKBY Agents"
+},
+{
+"code": "8001001000",
+"description": "Post Office Time Deposits (3 Years)-Payments"
+},
+{
+"code": "8008004445",
+"description": "Mahila Samman Savings Certificate Interest"
+},
+{
+"code": "8671004800",
+"description": "ATM Cash Loaded"
+},
+{
+"code": "8001000800",
+"description": "Post Office Time Deposits (2 Years)-Payments"
+},
+{
+"code": "8008004345",
+"description": "Kisan Vikas Patra-2014-interest"
+},
+{
+"code": "8446015900",
+"description": "BO New Account Opening Wallet-Cleared"
+},
+{
+"code": "8446015800",
+"description": "BO New Account Opening Wallet"
+},
+{
+"code": "8002001000",
+"description": "Kisan vikas patra-2014-Payments"
+},
+{
+"code": "8671004900",
+"description": "POSB Payment Cheque requested"
+},
+{
+"code": "8001000900",
+"description": "Post Office Time Deposits (3 Years)-Receipts"
+},
+{
+"code": "8001000700",
+"description": "Post Office Time Deposits (2 Years)-Receipts"
+},
+{
+"code": "8002004600",
+"description": "Mahila Samman Savings Certificate-Payments"
+},
+{
+"code": "8008001145",
+"description": "Post Office Recurring Deposits Interest"
+},
+{
+"code": "8008004045",
+"description": "6 Year NSC VIIIth Issue Interest"
+},
+{
+"code": "8002000900",
+"description": "Kisan vikas patra-2014-Receipts"
+},
+{
+"code": "8008007545",
+"description": "Recovery of Senior Citizens Savings Scheme-2004 Interest"
+},
+{
+"code": "8008001545",
+"description": "Senior Citizens Savings Scheme-2004 Interest"
+},
+{
+"code": "8001001200",
+"description": "Post Office Time Deposits (5 Years)-Payments"
+},
+{
+"code": "8001001600",
+"description": "Senior Citizen Savings Scheme-Payments"
+},
+{
+"code": "8661006300",
+"description": "NEFT outward payable pool account"
+},
+{
+"code": "8001002700",
+"description": "Sukanya Samriddhi Account-Receipts"
+},
+{
+"code": "8001001100",
+"description": "Post Office Time Deposits (5 Years)-Receipts"
+},
+{
+"code": "8001001400",
+"description": "Post Office Monthly Income Account-Payments"
+},
+{
+"code": "8671001900",
+"description": "HR to CBS Cleared"
+},
+{
+"code": "8002000400",
+"description": "6 Year National Savings Certificates (VIII-Issue)-Payments"
+},
+{
+"code": "8001000600",
+"description": "Post Office Time Deposits( 1 Year) TD-Payments"
+},
+{
+"code": "8001001300",
+"description": "Post Office Monthly Income Account-Receipts"
+},
+{
+"code": "8001000500",
+"description": "Post Office Time Deposits( 1 Year) TD-Receipts"
+},
+{
+"code": "8006000100",
+"description": "Public Provident Funds-Receipts"
+},
+{
+"code": "8782000800",
+"description": "RSAO_POSB_Credit"
+},
+{
+"code": "8001000300",
+"description": "Post Office Recurring Deposits -Receipts"
+},
+{
+"code": "8001000400",
+"description": "Post Office Recurring Deposits -Payments"
+},
+{
+"code": "8006000200",
+"description": "Public Provident Funds-Payments"
+},
+{
+"code": "8002000300",
+"description": "6 Year National Savings Certificates (VIII-Issue)-Receipts"
+},
+{
+"code": "8001001500",
+"description": "Senior Citizen Savings Scheme-Receipts"
+},
+{
+"code": "8782000900",
+"description": "RSAO_POSB_GRID_Debit"
+},
+{
+"code": "8001000100",
+"description": "Post Office Savings Bank Account -Receipts"
+},
+{
+"code": "8001000200",
+"description": "Post Office Savings Bank Account -Payments"
+}
+]

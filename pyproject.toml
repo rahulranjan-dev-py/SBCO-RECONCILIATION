@@ -4,25 +4,24 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sbco-recon"
-version = "0.1.0"
-description = "SBCO CBS-Cashbook reconciliation tool for India Post Head Offices (SB Order 09/2026)"
-requires-python = ">=3.10"
-dependencies = [
-    "PySide6>=6.6",
-    "SQLAlchemy>=2.0",
-    "pandas>=2.1",
-    "openpyxl>=3.1",
-    "xlrd>=2.0",
-]
+version = "2.4.0"
+description = "Cashbook-CBS reconciliation engine for India Post SBCO"
+requires-python = ">=3.9"
+dependencies = ["openpyxl>=3.1"]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.4"]
+xls = ["xlrd>=2.0"]          # legacy BIFF .xls downloads
+dev = ["pytest>=7.0"]
 
 [project.scripts]
-sbco-recon = "sbco_recon.app:main"
+sbco = "sbco_recon.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["sbco_recon*"]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"sbco_recon.refdata" = ["*.json"]
+"sbco_recon.webapp" = ["static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
