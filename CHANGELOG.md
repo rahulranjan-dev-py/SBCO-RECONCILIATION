@@ -2,6 +2,7 @@
 
 ## 2.6.0 — Windows packaging
 
+- Released under the MIT license; LICENSE.txt ships inside the Windows bundle.
 - Portable Windows package: extract-and-double-click, no installer, no admin
   rights, no Python on the PC. Built around python.org's official embeddable
   CPython (version- and SHA-256-pinned), with the application and all
