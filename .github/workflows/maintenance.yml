@@ -1,0 +1,46 @@
+name: maintenance
+
+# Housekeeping actions that need the repository API rather than git.
+# Currently: deleting a merged branch (some environments hold push-only git
+# credentials that cannot delete refs).
+
+on:
+  workflow_dispatch:
+    inputs:
+      delete_branch:
+        description: "Branch to delete (must be fully merged into the default branch)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  delete-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete the branch
+        uses: actions/github-script@v7
+        env:
+          TARGET: ${{ inputs.delete_branch }}
+        with:
+          script: |
+            const target = process.env.TARGET.trim().replace(/^refs\/heads\//, "");
+            const { data: repo } = await github.rest.repos.get({ ...context.repo });
+            if (!target || target === repo.default_branch) {
+              core.setFailed(`Refusing to delete '${target}' (default branch).`);
+              return;
+            }
+            // Only delete work that is already contained in the default branch.
+            const { data: cmp } = await github.rest.repos.compareCommitsWithBasehead({
+              ...context.repo,
+              basehead: `${repo.default_branch}...${target}`,
+            });
+            if (cmp.ahead_by > 0) {
+              core.setFailed(
+                `Refusing: '${target}' has ${cmp.ahead_by} commit(s) not in ` +
+                `'${repo.default_branch}'. Merge them first.`);
+              return;
+            }
+            await github.rest.git.deleteRef({
+              ...context.repo, ref: `heads/${target}` });
+            core.notice(`Deleted branch '${target}'.`);
