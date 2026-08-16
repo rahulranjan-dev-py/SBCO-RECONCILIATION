@@ -217,6 +217,7 @@ def check_bundle(bundle: Path) -> None:
         bundle / "SBCO Reconciliation.bat",
         bundle / "sbco.bat",
         bundle / "README.txt",
+        bundle / "LICENSE.txt",
         site / "sbco_recon" / "cli.py",
         site / "sbco_recon" / "refdata" / "account_codes.json",
         site / "sbco_recon" / "webapp" / "static" / "index.html",
@@ -269,6 +270,7 @@ def build(out_dir: Path, runtime_zip_arg: Path | None, keep_folder: bool) -> Pat
     (staging / "sbco.bat").write_text(LAUNCHER_CLI, encoding="ascii")
     (staging / "README.txt").write_text(
         BUNDLE_README.format(version=version), encoding="ascii")
+    shutil.copy2(ROOT / "LICENSE", staging / "LICENSE.txt")
 
     check_bundle(staging)
     target = zip_bundle(staging, out_dir, version)

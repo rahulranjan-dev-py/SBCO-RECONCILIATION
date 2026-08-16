@@ -10,6 +10,7 @@ Annexure-IV return to the PAO.
 ![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-3776AB?logo=python&logoColor=white)
 ![Runs offline](https://img.shields.io/badge/runs-100%25%20offline-2e7d32)
 ![SB Order 09/2026](https://img.shields.io/badge/SB%20Order-09%2F2026-b26a00)
+[![License: MIT](https://img.shields.io/badge/license-MIT-750014)](LICENSE)
 
 ![The Reconcile screen: Finacle vs Cash Book with the breaks isolated](docs/screenshots/reconcile.png)
 

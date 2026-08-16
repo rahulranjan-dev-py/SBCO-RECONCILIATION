@@ -107,6 +107,7 @@ def make_fake_bundle(tmp_path) -> Path:
     (bundle / "SBCO Reconciliation.bat").write_text(mp.LAUNCHER_GUI)
     (bundle / "sbco.bat").write_text(mp.LAUNCHER_CLI)
     (bundle / "README.txt").write_text("x")
+    (bundle / "LICENSE.txt").write_text("MIT License")
     return bundle
 
 
