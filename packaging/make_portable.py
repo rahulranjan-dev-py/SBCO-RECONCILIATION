@@ -39,10 +39,11 @@ PYTHON_VERSION = "3.12.8"
 ARCH = "amd64"
 DOWNLOAD_URL = ("https://www.python.org/ftp/python/{v}/python-{v}-embed-{a}.zip")
 
-# SHA-256 of python-{PYTHON_VERSION}-embed-{ARCH}.zip. Set from a build log's
-# "computed sha256" line (or python.org's published hashes) after the first
-# trusted download; once set, any different download aborts the build.
-EXPECTED_SHA256 = ""
+# SHA-256 of python-{PYTHON_VERSION}-embed-{ARCH}.zip, as computed from the
+# first trusted download (CI run #1 fetching directly from python.org over
+# TLS). Any different download aborts the build. Re-pin when PYTHON_VERSION
+# changes.
+EXPECTED_SHA256 = "8d3f33be9eb810f23c102f08475af2854e50484b8e4e06275e937be61ce3d2fb"
 
 ROOT = Path(__file__).resolve().parents[1]
 
