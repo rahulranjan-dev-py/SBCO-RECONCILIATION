@@ -30,19 +30,28 @@ jobs:
               core.setFailed(`Refusing to delete '${target}' (default branch).`);
               return;
             }
-            // Only delete work that the default branch already has. A branch
-            // counts as merged when its commits are in the default branch's
-            // history, or - after a squash merge - when its content diff
-            // against the default branch is empty.
+            // Deleting a ref is safe when it loses no content: either the
+            // branch's commits are already in the default branch's history
+            // (ahead_by 0), or the branch tip holds the exact same tree as
+            // the default branch tip. The compare API cannot answer the
+            // second case - it is three-dot and diffs against the merge
+            // base - so the trees are compared directly.
             const { data: cmp } = await github.rest.repos.compareCommitsWithBasehead({
               ...context.repo,
               basehead: `${repo.default_branch}...${target}`,
             });
-            const contentMerged = (cmp.files ?? []).length === 0;
-            if (cmp.ahead_by > 0 && !contentMerged) {
+            let safe = cmp.ahead_by === 0;
+            if (!safe) {
+              const [head, base] = await Promise.all([
+                github.rest.repos.getCommit({ ...context.repo, ref: target }),
+                github.rest.repos.getCommit({ ...context.repo, ref: repo.default_branch }),
+              ]);
+              safe = head.data.commit.tree.sha === base.data.commit.tree.sha;
+            }
+            if (!safe) {
               core.setFailed(
-                `Refusing: '${target}' has ${cmp.ahead_by} commit(s) with changes ` +
-                `not in '${repo.default_branch}'. Merge them first.`);
+                `Refusing: '${target}' has ${cmp.ahead_by} commit(s) whose content ` +
+                `is not in '${repo.default_branch}'. Merge them first.`);
               return;
             }
             await github.rest.git.deleteRef({
