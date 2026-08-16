@@ -107,8 +107,9 @@ def run() -> Report:
     else:
         report.add(WARN, "The 'sbco' shortcut is not on your PATH",
                    "This is normal and harmless.",
-                   "Use 'python -m sbco_recon.cli' wherever a guide says 'sbco',\n"
-                   "or just double-click Start SBCO Reconciliation.bat")
+                   "Use 'python -m sbco_recon.cli' wherever a guide says 'sbco'.\n"
+                   "In the portable package, just double-click SBCO Reconciliation\n"
+                   "(the application file), or use sbco.bat for the command line.")
 
     # ----------------------------------------------------------- data folder
     from ..store import LEGACY_NAME, default_db_path

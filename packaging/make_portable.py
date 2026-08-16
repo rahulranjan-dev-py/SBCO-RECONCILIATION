@@ -7,12 +7,31 @@ unmodified; every dependency is pure Python, so the bundle assembles
 deterministically on any OS (the usual place is the Windows CI job, but a
 Linux or macOS machine builds an identical zip).
 
-Why a portable folder and not a single .exe: freezers like PyInstaller
-self-extract at launch and are routinely quarantined by the antivirus policy
-on departmental PCs; a plain folder of files with Microsoft-signed python.exe
-inside is not. Upgrading is replacing the folder - the database lives in the
-user profile (%LOCALAPPDATA%\\SBCO), which is also why re-extracting cannot
-touch anyone's data.
+The entry point is the (renamed) Python interpreter itself - "SBCO
+Reconciliation.exe" - not a .bat script. This matters on managed Windows:
+
+- Smart App Control (default-on for new Windows 11 machines) blocks
+  internet-downloaded .bat/.cmd scripts outright, with no "run anyway"
+  option. It allows reputably signed executables - and python.exe carries
+  the Python Software Foundation's Authenticode signature, which survives
+  renaming (the signature covers content, not the file name).
+- Single-file freezers (PyInstaller and friends) self-extract at launch and
+  are routinely quarantined by departmental antivirus policy; a folder of
+  plain files around a signed interpreter is not.
+
+Double-clicking the exe starts the GUI through a guarded sitecustomize hook:
+the embeddable runtime's ._pth runs `import site`, site imports
+sitecustomize, and the hook launches the application only for a bare
+interactive start (sys.argv == ['']) of an exe named sbco* - verified
+signatures for a double-click and nothing else. Every scripted invocation
+(-m, -c, a script path) passes through untouched, and SBCO_NO_AUTOSTART=1
+is the escape hatch.
+
+Why the runtime files sit at the bundle root: the interpreter looks for its
+python3xx.dll and ._pth beside itself, so the renamed exe must live among
+them. Upgrading is replacing the folder - the database lives in the user
+profile (%LOCALAPPDATA%\\SBCO), which is also why re-extracting cannot touch
+anyone's data.
 
 Usage:
     python packaging/make_portable.py                    # download + build
@@ -45,40 +64,94 @@ DOWNLOAD_URL = ("https://www.python.org/ftp/python/{v}/python-{v}-embed-{a}.zip"
 # changes.
 EXPECTED_SHA256 = "8d3f33be9eb810f23c102f08475af2854e50484b8e4e06275e937be61ce3d2fb"
 
+APP_EXE = "SBCO Reconciliation.exe"
+
 ROOT = Path(__file__).resolve().parents[1]
 
-LAUNCHER_GUI = """\
-@echo off
-setlocal
-title SBCO Reconciliation Tool
-echo.
-echo   Starting the SBCO Reconciliation Tool...
-echo   Your browser will open in a moment.
-echo.
-echo   Keep this window open while you work. Close it when you are finished.
-echo   Your data is kept in your user folder, not in this program folder,
-echo   so replacing this folder to upgrade will not touch it.
-echo.
-"%~dp0runtime\\python.exe" -m sbco_recon.cli gui
-if errorlevel 1 (
-  echo.
-  echo   The tool stopped with an error. Running a check to find out why...
-  echo.
-  "%~dp0runtime\\python.exe" -m sbco_recon.cli doctor
-  pause
-)
-endlocal
+LAUNCHER_CLI = """\
+@"%~dp0SBCO Reconciliation.exe" -m sbco_recon.cli %*
 """
 
-LAUNCHER_CLI = """\
-@"%~dp0runtime\\python.exe" -m sbco_recon.cli %*
+SITECUSTOMIZE = '''\
+"""Bundle-only startup hook (this file ships inside the portable Windows
+package, never in the installed library).
+
+The embeddable runtime's ._pth runs `import site`, which imports this
+module on every interpreter start. When - and only when - the start is a
+bare double-click of the bundle's own executable, it launches the
+application instead of dropping the clerk into a Python prompt.
+
+The double-click signature is exact: sys.argv == [''] happens for an
+interactive start with no arguments and for nothing else (-m, -c and
+script runs all differ), and the executable-name check keeps the hook
+inert if this file is ever copied near a normally-named python.exe.
+Set SBCO_NO_AUTOSTART=1 to disable the hook entirely.
+
+This module runs inside `import site`, during interpreter startup, and
+that shapes two rules. SystemExit must never escape it: site's handler
+catches only Exception, so a SystemExit aborts startup as a fatal error -
+os._exit() is the one clean way to end the process from here. And a
+failure must be handled in full here: an uncaught Exception would be
+swallowed by site into a one-line stderr notice and the clerk would land
+in a bare Python prompt.
 """
+
+import os
+import sys
+
+
+def _fail(exc):
+    """The GUI could not start: say so plainly, self-diagnose, wait, exit."""
+    sys.stderr.write(
+        "\\n  The SBCO Reconciliation tool could not start.\\n"
+        "  Reason: %s: %s\\n\\n"
+        "  Checking this PC for the cause...\\n" % (type(exc).__name__, exc))
+    try:
+        from sbco_recon.webapp.doctor import run as doctor_run
+
+        sys.stderr.write(doctor_run().render() + "\\n")
+    except Exception:
+        pass
+    sys.stderr.flush()
+    try:
+        input("  Press Enter to close this window... ")
+    except Exception:
+        pass
+    os._exit(1)
+
+
+def _autostart():
+    if os.environ.get("SBCO_NO_AUTOSTART"):
+        return
+    if getattr(sys, "argv", None) not in ([], [""]):
+        return
+    exe = os.path.basename(getattr(sys, "executable", "") or "").lower()
+    if not exe.startswith("sbco"):
+        return
+    if os.environ.get("SBCO_AUTOSTART_CHECK"):
+        # CI proves the double-click path is wired without starting a server.
+        print("SBCO-AUTOSTART-OK")
+        sys.stdout.flush()
+        os._exit(0)
+    try:
+        from sbco_recon.cli import main
+
+        code = main(["gui"])
+    except Exception as exc:
+        _fail(exc)
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(code if isinstance(code, int) else 0)
+
+
+_autostart()
+'''
 
 BUNDLE_README = """\
 SBCO Reconciliation Tool {version}  -  portable Windows package
 ================================================================
 
-To start:  double-click "SBCO Reconciliation.bat".
+To start:  double-click "SBCO Reconciliation" (the application file).
            The tool opens in your web browser. Keep the black window
            open while you work; close it when you are finished.
 
@@ -92,13 +165,38 @@ replacing this folder does not touch your data.
 
 To upgrade:  delete this folder and extract the new one. Your data stays.
 
-Command line:  "sbco.bat" runs the same tool from a command prompt,
-e.g.   sbco.bat doctor
-       sbco.bat reconcile --month Jul-2026
+If Windows blocks something
+---------------------------
+Windows marks files downloaded from the internet, and two different
+features can react to that mark. They look similar but behave differently:
 
-This package carries its own Python runtime (the official embeddable
-build from python.org) in the "runtime" folder. It does not use, change,
-or require any Python installed on the PC.
+- "Windows protected your PC" (SmartScreen): choose "More info" and then
+  "Run anyway". Or clear the download mark first: right-click the
+  downloaded .zip -> Properties -> tick "Unblock" -> OK, extract again.
+
+- "Smart App Control blocked a file that may be unsafe": this one offers
+  no way to run anyway. It blocks downloaded script files such as .bat
+  outright - which is exactly why this tool starts from "SBCO
+  Reconciliation", a digitally signed program. In the unlikely event
+  Smart App Control blocks the application file itself, re-download the
+  official release zip and verify it against SHA256SUMS.txt; the only
+  override for a genuine Smart App Control block is switching it off in
+  Windows Security, which is permanent - treat that as a last resort and
+  ask your IT / divisional office first.
+
+sbco.bat runs the same tool from a command prompt (for example:
+sbco.bat doctor). Being a .bat script, PCs with Smart App Control will
+block it; there, use the application file's own command form instead:
+
+    "SBCO Reconciliation.exe" -m sbco_recon.cli doctor
+
+About this package
+------------------
+It carries its own Python runtime - the official embeddable build from
+python.org, renamed but otherwise unmodified, with its digital signature
+intact. It does not use, change, or require any Python installed on the
+PC. PYTHON-LICENSE.txt is the runtime's own licence; LICENSE.txt covers
+this software (MIT).
 """
 
 
@@ -156,17 +254,32 @@ def verify_runtime_zip(path: Path) -> None:
         raise SystemExit(f"{path} is not a zip file")
 
 
-def extract_runtime(runtime_zip: Path, runtime_dir: Path) -> None:
-    runtime_dir.mkdir(parents=True)
+def install_runtime(runtime_zip: Path, bundle: Path) -> None:
+    """Unpack the embeddable runtime into the bundle root and rename its
+    interpreter to the application name (the Authenticode signature covers
+    content, not the file name, so it stays valid)."""
+    bundle.mkdir(parents=True)
     with zipfile.ZipFile(runtime_zip) as zf:
-        zf.extractall(runtime_dir)
+        zf.extractall(bundle)
+
+    exe = bundle / "python.exe"
+    if not exe.exists():
+        raise SystemExit("runtime zip did not contain python.exe")
+    exe.rename(bundle / APP_EXE)
+
+    # The runtime ships its own LICENSE.txt (the PSF licence). Keep it under
+    # a distinct name so this project's LICENSE.txt does not overwrite it.
+    psf_licence = bundle / "LICENSE.txt"
+    if psf_licence.exists():
+        psf_licence.rename(bundle / "PYTHON-LICENSE.txt")
 
 
 def rewrite_pth(runtime_dir: Path) -> Path:
     """Point the embeddable runtime at Lib\\site-packages.
 
     The embeddable build ships pythonXY._pth with 'import site' commented out
-    and no site-packages entry, so a vendored package would be invisible.
+    and no site-packages entry, so a vendored package would be invisible -
+    and the sitecustomize hook depends on 'import site' running.
     """
     candidates = list(runtime_dir.glob("python*._pth"))
     if len(candidates) != 1:
@@ -212,12 +325,14 @@ def vendor_packages(site_packages: Path) -> None:
 
 def check_bundle(bundle: Path) -> None:
     """Fail the build if the assembled folder is missing anything vital."""
-    site = bundle / "runtime" / "Lib" / "site-packages"
+    site = bundle / "Lib" / "site-packages"
     required = [
-        bundle / "SBCO Reconciliation.bat",
+        bundle / APP_EXE,
         bundle / "sbco.bat",
         bundle / "README.txt",
         bundle / "LICENSE.txt",
+        bundle / "PYTHON-LICENSE.txt",
+        site / "sitecustomize.py",
         site / "sbco_recon" / "cli.py",
         site / "sbco_recon" / "refdata" / "account_codes.json",
         site / "sbco_recon" / "webapp" / "static" / "index.html",
@@ -229,12 +344,16 @@ def check_bundle(bundle: Path) -> None:
     if missing:
         raise SystemExit("bundle is incomplete, missing:\n  " + "\n  ".join(missing))
 
-    runtime = bundle / "runtime"
-    if not (runtime / "python.exe").exists():
-        raise SystemExit("bundle is incomplete: runtime/python.exe missing")
-    pth = list(runtime.glob("python*._pth"))
+    if not list(bundle.glob("python3*.dll")):
+        raise SystemExit("bundle is incomplete: python3*.dll missing beside the exe")
+    if (bundle / "python.exe").exists():
+        raise SystemExit("bundle still contains python.exe - the rename did not happen")
+    pth = list(bundle.glob("python*._pth"))
     if not pth or r"Lib\site-packages" not in pth[0].read_text(encoding="utf-8"):
         raise SystemExit("runtime ._pth does not reference Lib\\site-packages")
+    if "import site" not in pth[0].read_text(encoding="utf-8"):
+        raise SystemExit("runtime ._pth does not run 'import site' - "
+                         "the double-click hook would never load")
 
 
 def zip_bundle(bundle: Path, out_dir: Path, version: str) -> Path:
@@ -262,11 +381,12 @@ def build(out_dir: Path, runtime_zip_arg: Path | None, keep_folder: bool) -> Pat
 
     runtime_zip = obtain_runtime_zip(out_dir / "_cache", runtime_zip_arg)
     verify_runtime_zip(runtime_zip)
-    extract_runtime(runtime_zip, staging / "runtime")
-    rewrite_pth(staging / "runtime")
-    vendor_packages(staging / "runtime" / "Lib" / "site-packages")
+    install_runtime(runtime_zip, staging)
+    rewrite_pth(staging)
+    site_packages = staging / "Lib" / "site-packages"
+    vendor_packages(site_packages)
+    (site_packages / "sitecustomize.py").write_text(SITECUSTOMIZE, encoding="ascii")
 
-    (staging / "SBCO Reconciliation.bat").write_text(LAUNCHER_GUI, encoding="ascii")
     (staging / "sbco.bat").write_text(LAUNCHER_CLI, encoding="ascii")
     (staging / "README.txt").write_text(
         BUNDLE_README.format(version=version), encoding="ascii")

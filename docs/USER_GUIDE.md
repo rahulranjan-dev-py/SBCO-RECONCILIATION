@@ -10,7 +10,8 @@ background is assumed.
 
 Download `SBCO-Reconciliation-<version>-windows-x64.zip`, extract it anywhere
 you like (Desktop, Documents, a shared drive), open the folder and double-click
-**SBCO Reconciliation.bat**. The tool opens in your web browser.
+**SBCO Reconciliation** (the application file). The tool opens in your web
+browser.
 
 - You do **not** need administrator rights.
 - You do **not** need Python or anything else installed.
@@ -18,13 +19,34 @@ you like (Desktop, Documents, a shared drive), open the folder and double-click
   browser can reach it.
 - Keep the black window open while you work; close it when you are done.
 
+**If Windows blocks something** — two different Windows features can react to
+downloaded files, and they behave differently:
+
+- *"Windows protected your PC"* (SmartScreen): choose **More info → Run
+  anyway**, or clear the download mark first — right-click the downloaded
+  `.zip` → Properties → tick **Unblock** → OK, then extract again.
+- *"Smart App Control blocked a file that may be unsafe"*: this one has no
+  run-anyway option. It blocks downloaded scripts (`.bat`) outright — which is
+  exactly why the tool starts from the signed application file instead. If it
+  ever blocks the application file itself, re-download the official release
+  zip and verify it against `SHA256SUMS.txt`; the only override for a genuine
+  Smart App Control block is turning it off in Windows Security (a permanent,
+  one-way switch) — a last resort to discuss with your IT/divisional office.
+
 Your data is stored in your Windows user profile
 (`%LOCALAPPDATA%\SBCO`), **not** in the program folder. To upgrade to a new
 version, delete the old folder and extract the new one — your loaded reports,
 register and settings are untouched.
 
-If something will not start, run `sbco.bat doctor` (in the same folder) — it
-checks the PC and says, in plain words, what is wrong and how to fix it.
+If something will not start, run the built-in check — it looks at the PC and
+says, in plain words, what is wrong and how to fix it. In the folder, click
+the address bar, type `cmd`, press Enter, then run:
+
+```
+"SBCO Reconciliation.exe" -m sbco_recon.cli doctor
+```
+
+(`sbco.bat doctor` does the same on PCs without Smart App Control.)
 
 ## 2. First-time setup (once)
 
@@ -126,10 +148,19 @@ sbco.bat annexure --month Jul-2026          Annexure-IV Table-1
 sbco.bat doctor                             check the PC
 ```
 
+On PCs where Smart App Control blocks `.bat` scripts, use the application
+file's own command form instead — it is the same tool:
+
+```
+"SBCO Reconciliation.exe" -m sbco_recon.cli doctor
+```
+
 ## 10. If something looks wrong
 
 | What you see | What it means |
 |---|---|
+| "Windows protected your PC" (SmartScreen) | *More info → Run anyway*, or right-click the downloaded `.zip` → Properties → **Unblock** → OK and extract again. |
+| "Smart App Control blocked a file" | No run-anyway exists. Start the tool from **SBCO Reconciliation** (the application file), never a `.bat`. If the application file itself is blocked, re-download and verify against `SHA256SUMS.txt`; disabling Smart App Control (permanent) is the last resort. |
 | Yellow "No … report covers N day(s)" | A day in the period has no upload. Figures for those dates are not reliable — load the missing report. |
 | "Account code … is not in the reference master" | The uploaded data uses a code the tool does not know. Verify it before putting it on a return. |
 | A file is *rejected* | The message names the reason — wrong report, unreadable column, or a file that is not what its name says. Re-download in Excel format (never PDF). |

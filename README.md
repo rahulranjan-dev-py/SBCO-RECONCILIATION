@@ -37,11 +37,15 @@ daily and monthly routine in plain language. The version history is in the
 **End users on Windows** do not install anything: each release ships
 `SBCO-Reconciliation-<version>-windows-x64.zip`. Extract it anywhere -
 Desktop, Documents, a shared drive - and double-click
-**SBCO Reconciliation.bat** inside. No administrator rights, no Python on the
-PC, nothing added to PATH; the folder carries its own runtime (python.org's
-embeddable CPython). Upgrading is replacing the folder - the data lives in
-`%LOCALAPPDATA%\SBCO`, so it survives. See `packaging/README.md` for how the
-zip is built and why it is a folder rather than a single .exe.
+**SBCO Reconciliation** (the application) inside. No administrator rights, no
+Python on the PC, nothing added to PATH; the folder carries its own runtime
+(python.org's embeddable CPython, renamed but unmodified, its PSF signature
+intact). The signed interpreter itself is the entry point precisely because
+Smart App Control (default-on for new Windows 11 machines) blocks downloaded
+*scripts* outright, with no override, while the widely-reputed signed
+interpreter runs. Upgrading is replacing the
+folder - the data lives in `%LOCALAPPDATA%\SBCO`, so it survives. See
+`packaging/README.md` for the full design rationale.
 
 **From source** (any OS):
 
