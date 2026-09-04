@@ -128,14 +128,27 @@ def reconcile_by_code(store: Store, period: Period, *,
 
 # --------------------------------------------------- office-wise reconciliation
 
+def office_key(name: str) -> str:
+    """Fold an office name for matching: the portal writes 'Barkur S.O', the
+    office master 'Barkur SO'."""
+    return " ".join("".join(ch for ch in name.lower() if ch.isalnum() or ch.isspace()).split())
+
+
 def reconcile_by_office(store: Store, account_code: str, period: Period, *,
-                        finacle_source: Source = Source.FINACLE_GL,
+                        finacle_source: Optional[Source] = None,
                         offices: Optional[list] = None) -> ReconResult:
     """Compare Finacle against APT Accounting Details, office by office.
 
-    Finacle identifies an office by SOL ID; APT identifies it by office ID.
-    The office master is what joins them, and Branch Offices roll up to their
-    parent SO through sol_group.
+    Finacle identifies an office by SOL ID; APT identifies it by office ID
+    (or, when the export omits the ID, by name). The office master is what
+    joins them, and Branch Offices roll up to their parent SO through
+    sol_group.
+
+    Two Finacle reports can supply the per-office figures: the GL IT2.0
+    Transaction Report (the one the SOP has SBCO pull for a discrepancy date)
+    and a Set-ID GL-wise report. When finacle_source is not given, the
+    transaction report is used if it has data for this code and period, else
+    the GL-wise data.
     """
     offices = offices if offices is not None else store.offices()
     if not offices:
@@ -145,13 +158,19 @@ def reconcile_by_office(store: Store, account_code: str, period: Period, *,
             "(Office Name | Office ID | SOL ID/BO Code | SOL ID Group).")
         return result
 
-    finacle_raw = store.totals_by_office(finacle_source, account_code,
-                                         period.start, period.end)
+    if finacle_source is None:
+        finacle_raw = store.totals_by_office(Source.FINACLE_TXN, account_code,
+                                             period.start, period.end)
+        finacle_source = Source.FINACLE_TXN if finacle_raw else Source.FINACLE_GL
+    if finacle_source is not Source.FINACLE_TXN or not finacle_raw:
+        finacle_raw = store.totals_by_office(finacle_source, account_code,
+                                             period.start, period.end)
     apt_raw = store.totals_by_office(Source.APT_DETAILS, account_code,
                                      period.start, period.end)
 
     by_sol = {o.sol_id: o for o in offices}
     by_office_id = {o.office_id: o for o in offices}
+    by_name = {office_key(o.name): o for o in offices}
 
     finacle_totals, apt_totals, unmatched = {}, {}, []
 
@@ -166,7 +185,11 @@ def reconcile_by_office(store: Store, account_code: str, period: Period, *,
         finacle_totals[office.office_id] = finacle_totals.get(office.office_id, ZERO) + amount
 
     for key, amount in apt_raw.items():
-        office = by_office_id.get(key)
+        if key.startswith("name:"):
+            office = by_name.get(office_key(key[5:]))
+            key = key[5:]
+        else:
+            office = by_office_id.get(key)
         if office is None:
             unmatched.append(("APT", key, amount))
             continue
@@ -185,6 +208,17 @@ def reconcile_by_office(store: Store, account_code: str, period: Period, *,
             f"{system} data for SOL/office '{key}' ({amount:,}) does not match any "
             f"office in the master and is excluded from the office-wise totals.")
     return result
+
+
+def office_attribution(result: ReconResult) -> str:
+    """The register's 'office where the discrepancy is found', in the form the
+    legacy remarks used: 'Manipal HO (94,000), Barkur SO (40,000)'."""
+    def money(value: Decimal) -> str:
+        return f"{value:,.0f}" if value == value.to_integral_value() else f"{value:,.2f}"
+
+    parts = [f"{r.office.name} ({money(r.difference)})"
+             for r in result.rows if r.difference != ZERO]
+    return ", ".join(parts)
 
 
 def rollup_branch_offices(rows) -> list:

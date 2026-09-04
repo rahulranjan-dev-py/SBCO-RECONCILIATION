@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import sys
 from datetime import date, datetime
+from decimal import Decimal
 from pathlib import Path
 
 from . import __version__, refdata
@@ -17,10 +18,12 @@ from .fiscal import Period, fy_label, quarter_label
 from .ingest.batch import load_files, summarise
 from .model import Source
 from .normalize import parse_date
-from .reconcile import (coverage, reconcile_by_code, reconcile_by_date,
-                        reconcile_by_office, reconcile_clearing)
-from .reports import (write_annexure_iv_table1, write_discrepancy_register,
-                      write_discrepancy_report, write_recon_sheet)
+from .reconcile import (coverage, office_attribution, reconcile_by_code,
+                        reconcile_by_date, reconcile_by_office, reconcile_clearing)
+from .reports import (write_annexure_iv_table1, write_annexure_iv_table2,
+                      write_discrepancy_register, write_discrepancy_report,
+                      write_recon_sheet)
+from .table2 import table2_for_month
 from .store import Store, adopt_legacy_database, default_db_path
 
 DB_DEFAULT = str(default_db_path())
@@ -154,11 +157,13 @@ def cmd_clearing(args):
 
 def cmd_annexure(args):
     month = args.month or date.today().replace(day=1)
+    if args.table == 2:
+        return _annexure_table2(args, month)
     period = Period.for_month(month)
     with Store(args.db) as store:
         recon = reconcile_by_code(store, period)
         month_label = f"{month:%b-%Y}"
-        transfer_entries = store.transfer_entries(month_label)
+        transfer_entries = store.transfer_entries(month_label, scope="current")
         # SB Order 09/2026: Monthly Cash Account = daily cash books + approved
         # transfer entries of the DDO, so TEs belong in that column.
         result = build_table1(recon, month_label, transfer_entries)
@@ -267,6 +272,10 @@ def cmd_register(args):
                                                      office_name=args.office)
             already = store.open_register_codes(entry_date)
             fresh = [e for e in candidates if e.account_code not in already]
+            for entry in fresh:
+                if not entry.office_name:
+                    entry.office_name = office_attribution(
+                        reconcile_by_office(store, entry.account_code, period))
             store.add_register_entries(fresh)
             skipped = len(candidates) - len(fresh)
             print(f"  {len(fresh)} entr{'y' if len(fresh) == 1 else 'ies'} added "
@@ -323,6 +332,68 @@ def cmd_register(args):
     return 0
 
 
+def _annexure_table2(args, month) -> int:
+    from .webapp.server import parse_table2_opening
+    from .ingest.reader import read_rows
+
+    month_label = f"{month:%b-%Y}"
+    with Store(args.db) as store:
+        if args.opening:
+            rows = parse_table2_opening(read_rows(args.opening))
+            if not rows:
+                raise SystemExit("error: --opening file has no AC_CODE / RECEIPT_DIFF / "
+                                 "PAYMENT_DIFF rows")
+            n = store.replace_table2_opening(month_label, rows)
+            print(f"  {n} opening balance(s) recorded for {month_label}")
+
+        ddo = args.ddo or store.get("ddo_code", "")
+        ho = args.ho or store.get("ho_name", "")
+        division = args.division or store.get("division", "")
+        missing = [n for n, v in (("--ddo", ddo), ("--ho", ho),
+                                  ("--division", division)) if not v]
+        if missing:
+            raise SystemExit(f"error: missing {', '.join(missing)} "
+                             f"(or set them once with 'sbco config')")
+
+        result = table2_for_month(store, month_label)
+        for warning in result.warnings:
+            print(f"  ! {warning}")
+        out = args.output or f"CBS-MRR-TABLE2-{month:%b-%y}.xlsx"
+        path = write_annexure_iv_table2(
+            out, result, ddo_code=ddo, ho_name=ho, division=division, month=month,
+            include_settled=args.show_all)
+        print(f"\n  Annexure-IV Table-2 for {month:%B %Y}")
+        print(f"  opening {result.opening_total:,} | current {result.current_total:,} | "
+              f"rectified {result.rectified_total:,} | pending {result.closing_total:,}")
+        print(f"  {len(result.pending)} code(s) pending rectification")
+        print(f"  written: {path}")
+    return 0
+
+
+def cmd_te(args):
+    """Approved transfer entries: list, or add one."""
+    with Store(args.db) as store:
+        if args.add:
+            from .normalize import parse_amount
+
+            amount = parse_amount(args.amount)
+            if amount is None or not (args.from_code and args.to_code and args.month):
+                raise SystemExit("error: --add needs --month, --from, --to and --amount")
+            scope = "prior" if args.prior else "current"
+            store.add_transfer_entry(args.month, args.from_code, args.to_code,
+                                     amount, args.remarks, scope=scope)
+            print(f"  TE recorded for {args.month}: {args.from_code} -> {args.to_code} "
+                  f"{amount:,} ({'rectifies an earlier month - Table-2' if args.prior else 'this month - Table-1'})")
+        rows = store.transfer_entries(args.month or None)
+        print(f"\n  {len(rows)} transfer entr{'y' if len(rows) == 1 else 'ies'}"
+              + (f" for {args.month}" if args.month else ""))
+        for r in rows:
+            where = "Table-2 (earlier month)" if r["scope"] == "prior" else "Table-1 (this month)"
+            print(f"  #{r['id']:>3}  {r['month']:<9} {r['from_code']} -> {r['to_code']} "
+                  f"{Decimal(r['amount']):>14,}  {where}  {r['remarks']}")
+    return 0
+
+
 # ------------------------------------------------------------------ parser
 
 def build_parser():
@@ -367,11 +438,27 @@ def build_parser():
     add_period(sp)
     sp.set_defaults(func=cmd_clearing)
 
-    sp = sub.add_parser("annexure", help="generate Annexure-IV Table-1")
+    sp = sub.add_parser("annexure", help="generate Annexure-IV Table-1 or Table-2")
     sp.add_argument("--month", type=_date)
+    sp.add_argument("--table", type=int, choices=(1, 2), default=1,
+                    help="1: monthly reconciliation; 2: detailed opening/current/"
+                         "rectified/pending (default 1)")
+    sp.add_argument("--opening", metavar="FILE",
+                    help="Table-2 only: record the month's opening balances first "
+                         "(AC_CODE | DESCRIPTION | RECEIPT_DIFF | PAYMENT_DIFF)")
     sp.add_argument("--ddo"), sp.add_argument("--ho"), sp.add_argument("--division")
     sp.add_argument("--output"), sp.add_argument("--show-all", action="store_true")
     sp.set_defaults(func=cmd_annexure)
+
+    sp = sub.add_parser("te", help="approved transfer entries: list or add")
+    sp.add_argument("--month", help="e.g. Jul-2026")
+    sp.add_argument("--add", action="store_true")
+    sp.add_argument("--from", dest="from_code"), sp.add_argument("--to", dest="to_code")
+    sp.add_argument("--amount"), sp.add_argument("--remarks", default="")
+    sp.add_argument("--prior", action="store_true",
+                    help="rectifies an earlier month's pending difference (Table-2) "
+                         "instead of this month's cash account (Table-1)")
+    sp.set_defaults(func=cmd_te)
 
     sp = sub.add_parser("doctor", help="check this PC is set up correctly")
     sp.set_defaults(func=cmd_doctor)

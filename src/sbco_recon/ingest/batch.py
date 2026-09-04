@@ -15,7 +15,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..errors import FileRejected, ReconError
-from ..model import FileOutcome
+from ..model import FileOutcome, Source
 from ..store import Store, file_digest
 from .detect import ReportKind, detect_kind
 from .parse import parse_entries, parse_offices
@@ -63,6 +63,18 @@ def load_one(store: Store, path, *, allow_duplicate: bool = False) -> FileOutcom
                     f"on {existing['loaded_at']}", 0, existing["id"], digest)
 
         entries, warnings = parse_entries(rows, detection, p)
+
+        # The legacy tool's date guard ('Duplicate Found: UPLOAD RESTRICTED'):
+        # a day already held for this source is refused even when the bytes
+        # differ - a re-downloaded Finacle report carries a fresh run stamp,
+        # and loading it twice would double every figure. Accounting Details
+        # files cover one account code over a range, so they key on (date, code).
+        if not allow_duplicate:
+            clash = _already_loaded(store, detection.source, entries)
+            if clash:
+                return FileOutcome(str(p), "duplicate", clash[0], clash[1],
+                                   sha256=digest)
+
         try:
             batch_id = store.add_batch(detection.source, p, digest, entries)
         except Store.Duplicate as dup:
@@ -79,6 +91,32 @@ def load_one(store: Store, path, *, allow_duplicate: bool = False) -> FileOutcom
     except Exception as exc:  # noqa: BLE001 - an unexpected fault is still an outcome
         return FileOutcome(str(p), "failed", "unexpected error",
                            f"{type(exc).__name__}: {exc}", sha256=digest)
+
+
+def _already_loaded(store: Store, source: Source, entries) -> tuple:
+    """('reason', 'detail') when the store already holds any of these
+    (date, account code) pairs for this source, else ().
+
+    The legacy tool refused a whole date ('Duplicate Found: UPLOAD
+    RESTRICTED'). Keying on the account code as well keeps that protection
+    for a re-downloaded report (same codes, fresh run stamp) while letting a
+    second file that carries *other* codes for the same day load normally.
+    """
+    held = store.loaded_date_codes(
+        source, {(e.txn_date, e.account_code) for e in entries})
+    if not held:
+        return ()
+    days = sorted({d for d, _ in held})
+    codes = sorted({c for _, c in held})
+    batches = sorted(set(held.values()))
+    span = f"{days[0]:%d-%m-%Y}" + (f" to {days[-1]:%d-%m-%Y}" if len(days) > 1 else "")
+    if source is Source.APT_DETAILS or len(codes) <= 3:
+        what = f"A/c {', '.join(codes)}"
+    else:
+        what = f"{len(codes)} account codes"
+    return (f"{what} already loaded for {span}",
+            f"upload #{', #'.join(str(b) for b in batches)} - undo it first "
+            f"(Files screen) if this file should replace it")
 
 
 def load_files(store: Store, paths, *, allow_duplicate: bool = False) -> list:

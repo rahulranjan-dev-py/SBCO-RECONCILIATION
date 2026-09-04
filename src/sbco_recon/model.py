@@ -53,6 +53,7 @@ class Entry:
     sol_id: str = ""
     description: str = ""
     batch_id: int = 0
+    office_name: str = ""   # APT reports name the office; the ID may be absent
 
     def __post_init__(self):
         if not isinstance(self.amount, Decimal):

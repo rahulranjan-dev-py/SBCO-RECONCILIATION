@@ -172,17 +172,22 @@ SCHEMAS = (
                       deny=RUNNING_TOTAL_WORDS, checks="amount"),
         ),
     ),
+    # The raw export (legacy APT_ALL staging header, verified from the 1.09.8
+    # import macros): DEDUCT_DATE | OFFICE_ID | OFFICE_NAME | DATE | ACCT_CODE |
+    # AMT | REMARKS. The legacy tool keyed on DATE, never DEDUCT_DATE, so that
+    # column is denied for the date field rather than left to a leftmost-tie.
     Schema(
         kind=ReportKind.APT_ACCOUNTING_DETAILS,
         fields=(
-            FieldSpec("txn_date", ("date", "deduct date", "transaction date"),
-                      checks="date"),
-            FieldSpec("office_id", ("office id", "officeid")),
-            FieldSpec("office_name", ("office name", "office"), required=False),
+            FieldSpec("txn_date", ("date", "transaction date"),
+                      deny=("deduct",), checks="date"),
+            FieldSpec("office_id", ("office id", "officeid"), required=False),
+            FieldSpec("office_name", ("office name", "office")),
             FieldSpec("account_code", ("acct code", "account code", "a/c code", "ac code"),
                       deny=("description", "desc", "name"), checks="code"),
-            FieldSpec("amount", ("amt", "amount", "total"),
-                      deny=RUNNING_TOTAL_WORDS, checks="amount"),
+            FieldSpec("amount", ("amt", "amount", "total amount", "total"),
+                      deny=RUNNING_TOTAL_WORDS + ("transactions", "count"),
+                      checks="amount"),
             FieldSpec("remarks", ("remarks", "narration"), required=False),
         ),
     ),
@@ -331,13 +336,15 @@ def detect_kind(rows) -> Detection:
                             f"missing column(s): {', '.join(missing)}"))
 
     if not best.ok:
-        # The raw Finacle GL-wise export (SB Order 09/2026 Annexure-III) is a
-        # *form*: date and SOL live in a header block, not in columns, so the
-        # columnar schemas above can never match it.
+        # The raw Finacle exports (GL-wise and the Transaction Report, SB
+        # Order 09/2026 Annexure-III) are *forms*: date and SOL live in a
+        # header block, not in columns, so the columnar schemas above can
+        # never match them.
         from .glwise_form import detect_form
 
         layout = detect_form(rows)
         if layout is not None:
-            return Detection(ReportKind.FINACLE_GL_WISE, layout.header_row,
-                             score=1.0, form=layout)
+            kind = (ReportKind.FINACLE_TXN if layout.source is Source.FINACLE_TXN
+                    else ReportKind.FINACLE_GL_WISE)
+            return Detection(kind, layout.header_row, score=1.0, form=layout)
     return best

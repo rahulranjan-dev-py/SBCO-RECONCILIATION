@@ -66,9 +66,10 @@ def parse_entries(rows, detection: Detection, path="") -> tuple:
             account_code=code,
             amount=amount,
             source=source,
-            office_id=clean_text(_cell(row, cols.get("office_id"))),
-            sol_id=clean_text(_cell(row, cols.get("sol_id"))),
+            office_id=clean_text(_cell(row, cols.get("office_id"))).removesuffix(".0"),
+            sol_id=clean_text(_cell(row, cols.get("sol_id"))).removesuffix(".0"),
             description=clean_text(_cell(row, cols.get("description"))),
+            office_name=clean_text(_cell(row, cols.get("office_name"))),
         ))
 
     if considered and len(entries) / considered < MIN_PARSE_RATE:

@@ -1,4 +1,5 @@
-"""Reference data recovered from CASHBOOK_TOOL_for_SBCO_1_09_6.xlsb."""
+"""Reference data recovered from the CASHBOOK_TOOL_for_SBCO workbooks (account
+master and clearing pairs from 1.09.6, dashboard order refreshed from 1.09.8)."""
 
 from __future__ import annotations
 

@@ -421,15 +421,55 @@ async function loadTransferEntries() {
   const month = $("#teMonth").value.trim();
   const data = await get("transfer-entries", month ? { month } : {});
   $("#teList").innerHTML = data.rows.length
-    ? table(["Month", "From", "To", "Amount", "Remarks"],
+    ? table(["Month", "From", "To", "Amount", "Applies to", "Remarks"],
         data.rows.map((r) => [
           { v: esc(r.month), cls: "mono" },
           { v: esc(r.from_code), cls: "mono" },
           { v: esc(r.to_code), cls: "mono" },
           { v: moneyAlways(Number(r.amount)), cls: "num" },
+          { v: r.scope === "prior" ? "Earlier month (Table-2)" : "This month (Table-1)" },
           { v: esc(r.remarks) },
         ]))
     : `<p class="empty">No transfer entries recorded.</p>`;
+}
+
+async function generateReturn2() {
+  const month = $("#anMonth").value.trim();
+  if (!month) { toast("Enter the month, for example Jul-2026.", true); return; }
+  $("#btnAnnex2").disabled = true;
+  $("#an2Hint").textContent = "Working…";
+  try {
+    const res = await post("annexure2", { month, include_settled: $("#t2All").checked });
+    const warn = res.warnings.length ? ` ${res.warnings.length} warning(s) are printed on the sheet.` : "";
+    $("#an2Hint").innerHTML =
+      `Saved as <b>${esc(res.file)}</b> — ${res.pending} pending, closing ${moneyAlways(res.closing)}.${warn}
+       <a href="/download?f=${encodeURIComponent(res.file)}">Open it</a>`;
+    toast(`${res.file} saved to your working folder.`);
+  } catch (err) {
+    $("#an2Hint").textContent = "";
+    toast(err.message, true);
+  } finally {
+    $("#btnAnnex2").disabled = false;
+  }
+}
+
+async function sendOpeningBalances(file) {
+  const month = $("#anMonth").value.trim();
+  if (!month) { toast("Enter the month these balances open, for example Jul-2026.", true); return; }
+  try {
+    const res = await fetch("/api/table2-opening", {
+      method: "POST",
+      headers: {
+        "X-Filename": encodeURIComponent(file.name),
+        "X-Month": encodeURIComponent(month),
+        "X-SBCO-Token": window.SBCO_TOKEN,
+      },
+      body: file,
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    toast(`${data.rows} opening balance(s) recorded for ${data.month}.`);
+  } catch (err) { toast(err.message, true); }
 }
 
 /* ── discrepancy register (Table-3) ─────────────────────────── */
@@ -714,6 +754,12 @@ function wire() {
   });
 
   $("#btnAnnex").addEventListener("click", generateReturn);
+  $("#btnAnnex2").addEventListener("click", generateReturn2);
+  $("#btnT2Seed").addEventListener("click", () => $("#t2SeedIn").click());
+  $("#t2SeedIn").addEventListener("change", (e) => {
+    if (e.target.files.length) sendOpeningBalances(e.target.files[0]);
+    e.target.value = "";
+  });
   $("#teMonth").addEventListener("change", loadTransferEntries);
 
   $("#btnTe").addEventListener("click", async () => {
@@ -722,6 +768,7 @@ function wire() {
       from_code: $("#teFrom").value.trim(),
       to_code: $("#teTo").value.trim(),
       amount: $("#teAmt").value.trim(),
+      scope: $("#teScope").value,
       remarks: $("#teNote").value.trim(),
     };
     if (!payload.month || !payload.from_code || !payload.to_code || !payload.amount) {
