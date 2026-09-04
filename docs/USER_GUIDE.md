@@ -68,23 +68,40 @@ the consolidated Finacle report, account code by account code, every day.
 1. **Download the two reports** for the previous day:
    - Finacle MIS: *GL IT 2.0 Transaction GL Wise Report (Incl HO, SO & BOs) —
      Consolidated (Previous Day)*, with the HO SOL ID — save as Excel, not PDF;
-   - APT: *Accounts ▸ Accounts Consolidation ▸ Cashbook ▸ Download Cashbook (XLS)*.
+   - DOP IT 2.0 portal (`app.indiapost.gov.in`): *Accounts ▸ Cashbook ▸ Step 2
+     View/Download Cashbook ▸ Download Excel*. The browser saves it as
+     `export.xls`, `export(1).xls`, … — there is no need to rename it; the
+     tool reads what is inside, not the file name.
 2. **Drag both files onto Add reports.** The tool identifies each one itself,
    refuses duplicates, and tells you exactly why if a file is not recognised.
+   A report for a date that is already loaded is refused too ("*already loaded
+   for 01-07-2026 — upload #12*"): a re-downloaded copy carries a new run time
+   and would otherwise count twice. Undo the earlier upload first if the new
+   file should replace it.
 3. **Read the Reconcile screen.** Set the period; the balance strip shows
    Finacle vs Cash Book and the net difference. *Breaks only* lists just the
    account codes that do not agree.
    - Heed the yellow warnings: if a day in the period has no report loaded,
      differences for that day are not reliable — load the missing file first.
 4. **Investigate each break.** Double-click a row (or use the Investigate
-   screen) to see *which day* the break began. If you also load the APT
-   *Accounting Details* report for that code (Treasury ▸ Reports ▸ Accounting
-   Details, office: all), the office-by-office pane shows *which office* it
-   came from.
+   screen) to see *which day* the break began. To see *which office* it came
+   from, load two more files for that day:
+   - Finacle MIS: *GL IT 2.0 Transaction Report — Consolidated (Previous Day)*
+     with the **Set ID** (the whole HO set), which lists every SOL as a
+     "*NNNN - Office*" section;
+   - DOP IT 2.0: *Treasury ▸ Reports ▸ Accounting Details Office Wise*, for the
+     account code and the date (again saved as `export(n).xls`).
+
+   The office-by-office pane then shows the HO, each SO and each BO with
+   Finacle, APT and the difference. Offices are matched by office ID, or by
+   name when the portal export leaves the ID blank ("Barkur S.O" and
+   "Barkur SO" are the same office).
 5. **Record it.** Press **Save to register** — every break in the period goes
    into the Discrepancy Register (Annexure-IV Table-3) with the next serial
-   number. Pressing it twice cannot double-enter anything. Then report the
-   discrepancy to the Postmaster for rectification, as the SOP requires.
+   number, and the office column is filled in from the office-wise figures
+   when they are loaded ("*Barkur SO (1,000)*"). Pressing it twice cannot
+   double-enter anything. Then report the discrepancy to the Postmaster for
+   rectification, as the SOP requires.
 
 ## 4. Settling a discrepancy
 
@@ -113,19 +130,40 @@ these heads are tracked head by head.
 
 1. Record the DDO's **approved transfer entries** for the month on the
    *Monthly return* screen. A TE posts both legs: the from-code down, the
-   to-code up. The Monthly Cash Account column of the return is, per the
-   order's own footnote, daily cash books **plus** these TEs.
-2. Press **Generate the return** — Annexure-IV **Table-1** is written as an
+   to-code up. Say what each TE applies to:
+   - **This month's cash account (Table-1)** — the TE corrects a posting made
+     this month. The Monthly Cash Account column of Table-1 is, per the
+     order's own footnote, daily cash books **plus** these TEs.
+   - **An earlier month's pending difference (Table-2)** — the TE rectifies a
+     difference that Table-2 has been carrying. It appears under *Rectified
+     during the current month* and never touches Table-1.
+
+   One TE is one or the other; counting it in both would cancel a difference
+   twice.
+2. Press **Generate Table-1** — Annexure-IV **Table-1** is written as an
    .xlsx in the order's exact layout, with your DDO/HO/Division details and
    the signature block, ready to print and sign jointly with the Postmaster.
-3. Export **Table-3** for the register (Register screen) and include the
+3. Press **Generate Table-2** — the detailed return: for every account code,
+   the *opening* difference brought forward, this month's difference, what
+   was rectified, and what is still pending. Opening balances are last
+   month's closing balances, carried forward automatically from whatever the
+   tool holds — nothing has to be re-uploaded month after month.
+
+   **Preparing Table-2 for the first time** (or after moving from the Excel
+   tool): give the tool the balances it should open with. Press **Load
+   opening balances…**, choose the month, and pick last month's Table-2 or
+   a sheet with the columns `AC_CODE | DESCRIPTION | RECEIPT_DIFF |
+   PAYMENT_DIFF`. From then on the carry-forward is automatic.
+4. Export **Table-3** for the register (Register screen) and include the
    month's position of pending rectifications.
 
 ## 7. Files, mistakes and undo
 
 The **Files** screen lists every upload. If a wrong file was loaded, **Undo
 this upload** removes exactly that file's rows — nothing else. Uploading the
-identical file twice is detected by content (even if renamed) and refused.
+identical file twice is detected by content (even if renamed) and refused, and
+so is a fresh download of a report whose dates and account codes are already
+loaded.
 
 ## 8. Where your data lives, and backups
 
@@ -145,6 +183,10 @@ sbco.bat datewise 8001000200 --month Jul-2026
 sbco.bat register --record --month Jul-2026
 sbco.bat register --settle 4 --date 02-08-2026 --misc "Misc txn 12/2026"
 sbco.bat annexure --month Jul-2026          Annexure-IV Table-1
+sbco.bat annexure --month Jul-2026 --table 2 Annexure-IV Table-2
+sbco.bat annexure --month Jul-2026 --table 2 --opening last-month-table2.xlsx
+sbco.bat te --month Jul-2026                list the month's transfer entries
+sbco.bat te --month Jul-2026 --add --from 8001000200 --to 8001000100 --amount 1000 --prior
 sbco.bat doctor                             check the PC
 ```
 
@@ -164,4 +206,5 @@ file's own command form instead — it is the same tool:
 | Yellow "No … report covers N day(s)" | A day in the period has no upload. Figures for those dates are not reliable — load the missing report. |
 | "Account code … is not in the reference master" | The uploaded data uses a code the tool does not know. Verify it before putting it on a return. |
 | A file is *rejected* | The message names the reason — wrong report, unreadable column, or a file that is not what its name says. Re-download in Excel format (never PDF). |
-| A file is *duplicate* | That exact file (by content) is already loaded. Use Files ▸ Undo first if you truly need to reload it. |
+| A file is *duplicate* | That exact file (by content) is already loaded, or the dates and account codes it carries are. Use Files ▸ Undo first if you truly need to reload it. |
+| A transfer entry "has nothing outstanding" | A Table-2 TE names a code with no pending difference. Check the from/to codes and whether the TE should have applied to Table-1 instead. |

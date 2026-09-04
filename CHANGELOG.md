@@ -1,5 +1,53 @@
 # Changelog
 
+## 2.7.0 — Parity with the legacy tool's real workflow
+
+Derived from a frame-by-frame analysis of a recorded demonstration of
+`CASHBOOK TOOL for SBCO 1.09.8` and the VBA of build 1.09.81
+(`docs/LEGACY_DEMO_ANALYSIS.md`).
+
+- **Transaction Report as the office-wise source.** The legacy office-wise
+  comparison read the Finacle *GL IT2.0 Transaction Report — Consolidated
+  (Previous Day)* downloaded with the Set ID, not the GL-wise report. The
+  form parser now recognises both titles, the bare "*NNNN - Office*" section
+  labels that report uses, and Credit/Debit as well as Deposits/Withdrawals
+  headers. Transaction Report data is stored as its own source
+  (`FINACLE_TXN`) so it coexists with the daily GL-wise file; the office-wise
+  reconciliation prefers it when present.
+- **APT Accounting Details, as the portal actually exports it.** The raw
+  header is `DEDUCT_DATE | OFFICE_ID | OFFICE_NAME | DATE | ACCT_CODE | AMT |
+  REMARKS`; detection now binds the transaction date to `DATE` (never
+  `DEDUCT_DATE`), treats `OFFICE_ID` as optional and carries the office
+  name, and the office-wise reconciliation matches by name when the ID is
+  blank ("Barkur S.O" and "Barkur SO" are the same office).
+- **Date-level duplicate guard.** The legacy tool refused a second upload for
+  a date it already held ("Duplicate Found: UPLOAD RESTRICTED"). Content
+  hashing alone could not: a re-downloaded report differs in its run
+  timestamp. A file whose (date, account code) pairs are already loaded for
+  that source is now reported as `duplicate`, naming the dates and the upload
+  to undo. APT files are keyed per account code, so a different code for the
+  same dates still loads.
+- **Annexure-IV Table-2 in the interface and the CLI.** Opening balances are
+  carried forward from every month the tool holds, oldest first; a one-time
+  opening seed (`AC_CODE | DESCRIPTION | RECEIPT_DIFF | PAYMENT_DIFF`, the
+  legacy template) covers the first month or a migration from the Excel tool.
+  `POST /api/annexure2`, `POST /api/table2-opening`, `sbco annexure --table 2
+  [--opening FILE]`.
+- **Transfer entries are scoped.** A TE applies either to this month's cash
+  account (Table-1) or to an earlier month's pending difference (Table-2's
+  *Rectified during the current month*), never both. New `sbco te` command;
+  the interface asks which on entry.
+- **Office attribution on the register.** Recording discrepancies fills the
+  office column from the office-wise figures when they are loaded, in the
+  legacy remark style ("Manipal HO (94,000), Barkur SO (40,000)").
+- Dashboard code order refreshed from 1.09.81 (same 428 codes, same 3,006
+  account codes). Existing databases migrate in place (`entry.office_name`,
+  `transfer_entry.scope`, `table2_opening`).
+- User guide: the DOP IT 2.0 portal paths as demonstrated (Accounts ▸
+  Cashbook ▸ Download Excel; Treasury ▸ Reports ▸ Accounting Details Office
+  Wise), `export(n).xls` downloads need no renaming, the office-wise file
+  pair, the monthly Table-2 routine.
+
 ## 2.6.1 — Smart App Control compatibility
 
 - The Windows bundle's entry point is now **SBCO Reconciliation.exe** — the

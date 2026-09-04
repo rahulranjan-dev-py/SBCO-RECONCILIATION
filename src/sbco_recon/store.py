@@ -52,7 +52,8 @@ CREATE TABLE IF NOT EXISTS entry (
     source       TEXT NOT NULL,
     office_id    TEXT NOT NULL DEFAULT '',
     sol_id       TEXT NOT NULL DEFAULT '',
-    description  TEXT NOT NULL DEFAULT ''
+    description  TEXT NOT NULL DEFAULT '',
+    office_name  TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS ix_entry_lookup ON entry(source, txn_date, account_code);
 CREATE INDEX IF NOT EXISTS ix_entry_batch  ON entry(batch_id);
@@ -104,7 +105,17 @@ CREATE TABLE IF NOT EXISTS transfer_entry (
     to_code      TEXT NOT NULL,
     amount       TEXT NOT NULL,
     remarks      TEXT NOT NULL DEFAULT '',
-    created_at   TEXT NOT NULL
+    created_at   TEXT NOT NULL,
+    scope        TEXT NOT NULL DEFAULT 'current'   -- 'current': Table-1 cash account; 'prior': Table-2 rectification
+);
+
+CREATE TABLE IF NOT EXISTS table2_opening (
+    month        TEXT NOT NULL,          -- the month this balance OPENS, e.g. 'Jul-2026'
+    account_code TEXT NOT NULL,
+    description  TEXT NOT NULL DEFAULT '',
+    receipt_diff TEXT NOT NULL DEFAULT '0',
+    payment_diff TEXT NOT NULL DEFAULT '0',
+    PRIMARY KEY (month, account_code)
 );
 
 CREATE TABLE IF NOT EXISTS setting (
@@ -124,6 +135,20 @@ def file_digest(path) -> str:
 
 
 _MIGRATED = set()
+
+# Columns added after 2.3.1. CREATE TABLE IF NOT EXISTS leaves an existing
+# table untouched, so they are added here for databases created earlier.
+_ADDED_COLUMNS = (
+    ("entry", "office_name", "TEXT NOT NULL DEFAULT ''"),
+    ("transfer_entry", "scope", "TEXT NOT NULL DEFAULT 'current'"),
+)
+
+
+def _migrate(conn) -> None:
+    for table, column, ddl in _ADDED_COLUMNS:
+        present = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+        if column not in present:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
 
 
 def default_db_path() -> Path:
@@ -210,6 +235,7 @@ class Store:
         if self.path not in _MIGRATED:
             self.conn.execute("PRAGMA journal_mode = WAL")
             self.conn.executescript(SCHEMA)
+            _migrate(self.conn)
             self.conn.commit()
             _MIGRATED.add(self.path)
 
@@ -276,10 +302,11 @@ class Store:
             self.conn.executemany(
                 """INSERT INTO entry
                    (batch_id, txn_date, account_code, amount, source,
-                    office_id, sol_id, description)
-                   VALUES (?,?,?,?,?,?,?,?)""",
+                    office_id, sol_id, description, office_name)
+                   VALUES (?,?,?,?,?,?,?,?,?)""",
                 [(batch_id, e.txn_date.isoformat(), e.account_code, str(e.amount),
-                  e.source.value, e.office_id, e.sol_id, e.description) for e in rows],
+                  e.source.value, e.office_id, e.sol_id, e.description,
+                  e.office_name) for e in rows],
             )
         return batch_id
 
@@ -325,15 +352,58 @@ class Store:
     def totals_by_office(self, source: Source, account_code: str,
                          start: date, end: date) -> dict:
         rows = self.conn.execute(
-            """SELECT office_id, sol_id, amount FROM entry
+            """SELECT office_id, sol_id, office_name, amount FROM entry
                WHERE source=? AND account_code=? AND txn_date BETWEEN ? AND ?""",
             (source.value, account_code, start.isoformat(), end.isoformat()),
         ).fetchall()
         out = {}
         for r in rows:
-            key = r["office_id"] or r["sol_id"]
+            # Finacle rows carry a SOL; APT rows an office ID, or - when the
+            # export omits it - only the office name, flagged with a prefix so
+            # the caller matches it against the master by name.
+            key = r["office_id"] or r["sol_id"] or (
+                "name:" + r["office_name"] if r["office_name"] else "")
             out[key] = out.get(key, Decimal(0)) + Decimal(r["amount"])
         return out
+
+    def loaded_date_codes(self, source: Source, pairs) -> dict:
+        """{(date, account_code): batch_id} already covered - for reports that
+        carry one account code over a range (APT Accounting Details), where a
+        different code for the same dates is not a duplicate."""
+        pairs = set(pairs)
+        if not pairs:
+            return {}
+        dates = sorted({d.isoformat() for d, _ in pairs})
+        codes = sorted({c for _, c in pairs})
+        rows = self.conn.execute(
+            f"""SELECT DISTINCT e.txn_date, e.account_code, e.batch_id FROM entry e
+                JOIN batch b ON b.id = e.batch_id
+                WHERE e.source=? AND b.reversed_at IS NULL
+                  AND e.txn_date IN ({",".join("?" * len(dates))})
+                  AND e.account_code IN ({",".join("?" * len(codes))})""",
+            (source.value, *dates, *codes)).fetchall()
+        found = {(date.fromisoformat(r["txn_date"]), r["account_code"]): r["batch_id"]
+                 for r in rows}
+        return {k: v for k, v in found.items() if k in pairs}
+
+    def months_with_data(self) -> list:
+        """Every 'Mon-YYYY' label that has ledger data, transfer entries or a
+        Table-2 opening seed - the months the Table-2 chain must walk."""
+        months = set()
+        for r in self.conn.execute(
+                """SELECT DISTINCT substr(e.txn_date, 1, 7) AS ym FROM entry e
+                   JOIN batch b ON b.id = e.batch_id
+                   WHERE b.reversed_at IS NULL AND e.source IN (?, ?)""",
+                (Source.FINACLE_GL.value, Source.CASHBOOK.value)):
+            y, m = r["ym"].split("-")
+            months.add(date(int(y), int(m), 1))
+        from .table2 import parse_month
+        for table in ("transfer_entry", "table2_opening"):
+            for r in self.conn.execute(f"SELECT DISTINCT month FROM {table}"):
+                parsed = parse_month(r["month"])
+                if parsed:
+                    months.add(parsed.replace(day=1))
+        return [d.strftime("%b-%Y") for d in sorted(months)]
 
     def totals_by_date(self, source: Source, account_code: str,
                        start: date, end: date) -> dict:
@@ -518,21 +588,58 @@ class Store:
     # -------------------------------------------------------- transfer entry
 
     def add_transfer_entry(self, month: str, from_code: str, to_code: str,
-                           amount: Decimal, remarks="") -> int:
+                           amount: Decimal, remarks="", scope: str = "current") -> int:
+        """Record an approved TE.
+
+        scope 'current': it corrects this month's cash account and belongs in
+        Table-1 (the order: Monthly Cash Account = cash books + approved TEs).
+        scope 'prior': it rectifies a difference carried from an earlier month
+        and belongs in Table-2's 'Rectified During the Current Month'. One TE
+        is one or the other - never both, or it would count twice.
+        """
+        if scope not in ("current", "prior"):
+            raise ValueError("scope must be 'current' or 'prior'")
         with self.conn:
             cur = self.conn.execute(
                 """INSERT INTO transfer_entry
-                   (month, from_code, to_code, amount, remarks, created_at)
-                   VALUES (?,?,?,?,?,?)""",
+                   (month, from_code, to_code, amount, remarks, created_at, scope)
+                   VALUES (?,?,?,?,?,?,?)""",
                 (month, from_code, to_code, str(amount), remarks,
-                 datetime.now().isoformat(timespec="seconds")))
+                 datetime.now().isoformat(timespec="seconds"), scope))
         return cur.lastrowid
 
-    def transfer_entries(self, month: Optional[str] = None) -> list:
+    def transfer_entries(self, month: Optional[str] = None,
+                         scope: Optional[str] = None) -> list:
+        sql, args = "SELECT * FROM transfer_entry WHERE 1=1", []
         if month:
-            return self.conn.execute(
-                "SELECT * FROM transfer_entry WHERE month=? ORDER BY id", (month,)).fetchall()
-        return self.conn.execute("SELECT * FROM transfer_entry ORDER BY id").fetchall()
+            sql += " AND month=?"
+            args.append(month)
+        if scope:
+            sql += " AND scope=?"
+            args.append(scope)
+        return self.conn.execute(sql + " ORDER BY id", args).fetchall()
+
+    # ------------------------------------------------ Table-2 opening seed
+
+    def replace_table2_opening(self, month: str, rows) -> int:
+        """Set the balances Table-2 opens with for `month` - the 'preparing for
+        the first time' case, seeded from the previous month's Table-2 (the
+        legacy tool's AC_CODE | DESCRIPTION | RECEIPT_DIFF | PAYMENT_DIFF
+        template). rows: iterables of (code, description, receipt, payment)."""
+        rows = list(rows)
+        with self.conn:
+            self.conn.execute("DELETE FROM table2_opening WHERE month=?", (month,))
+            self.conn.executemany(
+                """INSERT INTO table2_opening
+                   (month, account_code, description, receipt_diff, payment_diff)
+                   VALUES (?,?,?,?,?)""",
+                [(month, str(c), d or "", str(r), str(p)) for c, d, r, p in rows])
+        return len(rows)
+
+    def table2_opening(self, month: str) -> list:
+        return self.conn.execute(
+            "SELECT * FROM table2_opening WHERE month=? ORDER BY account_code",
+            (month,)).fetchall()
 
     # -------------------------------------------------------------- settings
 

@@ -133,7 +133,7 @@
       <!-- ── RETURN ── -->
       <section class="view" data-view="return">
         <h1 class="h1">Monthly return to the PAO</h1>
-        <p class="lede">Annexure-IV Table-1, due by the 4th of each month.</p>
+        <p class="lede">Annexure-IV Table-1 and Table-2, due by the 4th of each month.</p>
 
         <div class="card">
           <div class="field-row">
@@ -149,14 +149,35 @@
           <label class="check"><input type="checkbox" id="anAll">
             Include codes that agree, not just the breaks</label>
           <div class="card-foot">
-            <button class="btn btn-solid" id="btnAnnex">Generate the return</button>
+            <button class="btn btn-solid" id="btnAnnex">Generate Table-1</button>
             <span class="hint" id="anHint"></span>
           </div>
         </div>
 
         <div class="card">
+          <h2 class="h2">Table-2 — detailed report (opening / current / rectified / pending)</h2>
+          <p class="lede-sm">Carried forward automatically from every month loaded:
+            this month's opening balances are last month's closing balances.
+            Preparing for the first time? Load last month's Table-2 (or the
+            AC_CODE / DESCRIPTION / RECEIPT_DIFF / PAYMENT_DIFF template) as the
+            opening balances for the month.</p>
+          <label class="check"><input type="checkbox" id="t2All" checked>
+            Include codes already settled (pending nil)</label>
+          <div class="card-foot">
+            <button class="btn btn-solid" id="btnAnnex2">Generate Table-2</button>
+            <button class="btn btn-ghost" id="btnT2Seed">Load opening balances…</button>
+            <input type="file" id="t2SeedIn" hidden accept=".xls,.xlsx,.xlsb,.csv">
+            <span class="hint" id="an2Hint"></span>
+          </div>
+        </div>
+
+        <div class="card">
           <h2 class="h2">Approved transfer entries</h2>
-          <p class="lede-sm">Record a TE so the return shows the corrected position.</p>
+          <p class="lede-sm">Record a TE so the return shows the corrected position.
+            A TE either corrects <b>this month's</b> cash account (it goes into
+            Table-1's Monthly Cash Account) or rectifies a difference carried from
+            an <b>earlier month</b> (it goes into Table-2's "Rectified During the
+            Current Month") — never both.</p>
           <div class="field-row">
             <div class="field"><label class="lbl" for="teMonth">Month</label>
               <input type="text" id="teMonth" class="dt" placeholder="Jul-2026"></div>
@@ -166,6 +187,11 @@
               <input type="text" id="teTo" class="code-in sm"></div>
             <div class="field"><label class="lbl" for="teAmt">Amount</label>
               <input type="text" id="teAmt" class="code-in sm"></div>
+            <div class="field"><label class="lbl" for="teScope">Applies to</label>
+              <select id="teScope" class="quick">
+                <option value="current">This month's cash account (Table-1)</option>
+                <option value="prior">An earlier month's pending difference (Table-2)</option>
+              </select></div>
             <div class="field field-grow"><label class="lbl" for="teNote">Remarks</label>
               <input type="text" id="teNote" class="txt"></div>
           </div>

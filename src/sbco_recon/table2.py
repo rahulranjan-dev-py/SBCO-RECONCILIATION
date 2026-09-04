@@ -264,3 +264,75 @@ def build_table2(month: str,
 
 
 
+
+
+# ----------------------------------------------------- the month-to-month chain
+
+class _Table1Difference:
+    """The shape build_table2 reads from a Table-1 row: one signed difference."""
+
+    __slots__ = ("account_code", "description", "difference")
+
+    def __init__(self, row):
+        self.account_code = row.account_code
+        self.description = row.description
+        # a code sits on one side, so exactly one of these is non-zero
+        self.difference = row.difference_receipt + row.difference_payment
+
+
+class _Opening:
+    """A Table-2 opening seed row, in the shape of a prior month's closing."""
+
+    __slots__ = ("account_code", "description", "closing_receipt",
+                 "closing_payment", "first_month")
+
+    def __init__(self, row, month):
+        self.account_code = row["account_code"]
+        self.description = row["description"]
+        self.closing_receipt = _amount(row["receipt_diff"])
+        self.closing_payment = _amount(row["payment_diff"])
+        self.first_month = month
+
+
+def table2_for_month(store, month: str) -> Table2Result:
+    """Table-2 for `month`, carried forward from everything the store holds.
+
+    The legacy tool rebuilt Table-2 by hand each month: upload last month's
+    Table-2 (or a first-time seed), upload this month's Table-1, add the TEs
+    that rectified older differences. Here the same arithmetic walks every
+    month with data, oldest first, so this month's opening balances are last
+    month's closing balances without anyone re-uploading anything. A seed
+    recorded for a month (Store.replace_table2_opening) replaces the computed
+    carry-forward for that month - the "preparing for the first time" case.
+    """
+    from .annexure import build_table1
+    from .fiscal import Period
+    from .reconcile import reconcile_by_code
+
+    target = parse_month(month)
+    if target is None:
+        raise ValueError(f"'{month}' is not a month - use e.g. Jul-2026")
+    target_label = month_label(target)
+
+    months = [m for m in store.months_with_data()
+              if parse_month(m) and parse_month(m) <= target]
+    if target_label not in months:
+        months.append(target_label)
+    months.sort(key=parse_month)
+
+    previous = []
+    result = None
+    for label in months:
+        seed = store.table2_opening(label)
+        if seed:
+            previous = [_Opening(r, label) for r in seed]
+
+        period = Period.for_month(parse_month(label))
+        recon = reconcile_by_code(store, period, check_coverage=False)
+        table1 = build_table1(recon, label, store.transfer_entries(label, scope="current"))
+        current = [_Table1Difference(r) for r in table1.rows]
+
+        result = build_table2(label, current, previous_table2=previous,
+                              transfer_entries=store.transfer_entries(label, scope="prior"))
+        previous = result.rows
+    return result

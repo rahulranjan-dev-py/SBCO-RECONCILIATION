@@ -90,6 +90,8 @@ sbco datewise 8001000200 --month Jul-2026   # find the day a break began
 sbco officewise 8001000100 --month Jul-2026
 sbco clearing --month Jul-2026
 sbco annexure --month Jul-2026              # writes CBS-MRR-TABLE1-Jul-26.xlsx
+sbco annexure --month Jul-2026 --table 2    # Table-2, carried forward month by month
+sbco te --month Jul-2026 --add --from 8001000200 --to 8001000100 --amount 1000 --prior
 sbco register --record --month Jul-2026     # save the month's breaks to Table-3
 sbco register --settle 4 --date 02-08-2026 --misc "Misc txn 12/2026"
 sbco register --export                      # the FY's register as Table-3 .xlsx
@@ -104,9 +106,11 @@ sbco reverse 3                              # undo exactly one upload
 | Password `"suraj"` in 206 places; sheet protection as the security model | No protection theatre. Data lives in SQLite; the file is the artefact, not the fortress |
 | 38 routines disabled calculation with no error handler - a crash left manual calc and stale figures on screen | No global Excel state to corrupt. A failure aborts its own transaction and nothing else |
 | Batch upload reported 3 selected, 2 processed, 0 failed | Every submitted path yields exactly one `FileOutcome`; the runner asserts the count before reporting |
-| Uploading the same file twice double-counted it | SHA-256 per file; a repeat is reported as `duplicate` |
+| Uploading the same file twice double-counted it | SHA-256 per file, plus a per-source (date, account code) guard for re-downloads; a repeat is reported as `duplicate` with the upload to undo |
 | Deleting a date range removed correct data sharing those dates | `reverse` removes exactly one batch's rows |
 | One cell (`L2 = "Progressive Total"`) decided validity | Header-driven detection anywhere in the first 40 rows; survives inserted columns; every rejection names its reason |
+| Table-2 rebuilt by hand each month: re-upload last month's Table-2, this month's Table-1, and the TE list | Opening balances carry forward from the data already held; a one-time seed covers the first month. A TE is scoped to Table-1 *or* Table-2, so it cannot count twice |
+| Office-wise reconciliation matched offices by ID only | ID, or name when the portal export omits it ("Barkur S.O" = "Barkur SO") |
 | Quarter table hardcoded to 31-Mar-2029 | Computed; works for any date |
 | Required Windows set to English (India) | Locale-independent parsing; day-first only, never guesses |
 | Amounts as floats | `Decimal` throughout - exact zero comparisons |
@@ -127,11 +131,13 @@ src/sbco_recon/
   ingest/
     reader.py     .xls / .xlsx / .xlsb / .csv, plus HTML tables wearing .xls
     detect.py     header-driven report identification
-    glwise_form.py  the raw Finacle GL-wise export (form-style header, per-SOL
-                    sections, Deposits/Withdrawals split) - see below
+    glwise_form.py  the raw Finacle GL-wise and Transaction Report exports
+                    (form-style header, per-SOL sections, Cr/Dr split)
     parse.py      rows -> Entry, with per-reason skip accounting
     batch.py      the loader that cannot lose a file
-  reports/        Annexure-IV Table-1 and general .xlsx exports
+  table2.py       Annexure-IV Table-2: opening / current / rectified / pending,
+                  chained month by month
+  reports/        Annexure-IV Table-1, Table-2, Table-3 and general .xlsx exports
   webapp/         local server + the browser interface (no build step, no CDN)
   refdata/        3,006 account codes, 428 dashboard codes, 8 clearing pairs
                   recovered from the original workbook
@@ -204,7 +210,7 @@ mismatch/cleared pairs (CBS, PLI/RPLI, IPPB, Other x Receipts/Payments).
 ## Tests
 
 ```bash
-pytest -q        # 137 passed
+pytest -q        # 166 passed
 pytest -q -O     # also passes with assertions stripped
 ```
 
@@ -214,6 +220,11 @@ accounting, F-11 validation, F-13 quarter expiry, F-24 locale dependence).
 suite that re-runs the original attacks (cross-origin POST, foreign Host
 header, database download) and a property test asserting that shuffling the
 column order of a report never changes the parsed totals.
+`test_legacy_1_09_8_parity.py` pins what was recovered from the legacy tool's
+recorded demonstration and its 1.09.81 VBA (see
+[docs/LEGACY_DEMO_ANALYSIS.md](docs/LEGACY_DEMO_ANALYSIS.md)): the
+Transaction Report as the office-wise source, the raw APT header, the
+date-level duplicate guard, and the Table-2 month chain.
 
 ## Data location
 

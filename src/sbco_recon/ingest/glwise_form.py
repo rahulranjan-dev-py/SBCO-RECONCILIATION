@@ -1,29 +1,38 @@
-"""Form-style GL IT 2.0 GL-Wise report: the raw Finacle export.
+"""Form-style Finacle reports: the raw GL IT 2.0 exports.
 
 The columnar detector expects every row to carry its own date and SOL ID. The
-report as Finacle actually emits it (SB Order 09/2026, Annexure-III, page 11)
-does neither: the date and SOL sit in a *header block* of label/value pairs,
+reports as Finacle actually emits them (SB Order 09/2026, Annexure-III; the
+legacy tool's own import macros) do neither: the date sits in a *header block*
+of label/value pairs, the SOL is a section label above each table, and the
+amount is split into Deposits (Cr) and Withdrawals (Dr).
+
+Two reports share this shape and are both handled here:
+
+- **GL IT2.0 Transaction GL Wise Report ... Consolidated (Previous Day)** -
+  one table per SOL; with the HO SOL ID it is the consolidated daily figure
+  (Incl HO, SO & BOs), with a Set ID it repeats the block per SOL.
+  Stored as Source.FINACLE_GL.
+- **GL IT2.0 Transaction Report - Consolidated (Previous Day)** - the report
+  the SOP has SBCO generate with the HO Set ID to pin a discrepancy to an
+  office. Same anatomy: header date, per-SOL sections whose label reads
+  "60001700 - Office name", a table headed "IT2.0 A/C Code" with two amount
+  columns that the legacy tool summed. Stored as Source.FINACLE_TXN, a
+  separate store, so it can sit beside the day's consolidated GL-wise file
+  without double counting (the date guard is per source).
 
     Date :            02-05-2026
     Sol ID :          60001700
     Set ID / Desc :   TAMI1 - TAMI1
     Sol ID / Desc :   60001700 - Thygarayanagar H.O
 
-and the table splits the amount into Deposits (Cr) and Withdrawals (Dr):
-
     S.No | GL Sub Head Code | IT2.0 A/C Code | IT2.0 Acct Code Desc |
     Deposits (Cr) | Withdrawals (Dr)
 
-A report generated with a Set ID repeats the "Sol ID / Desc :" block and the
-table once per SOL in the set, all in one sheet, which is what feeds the
-office-wise reconciliation.
-
-This module recognises that shape and turns it into Entry records: the header
-date is stamped on every row, each section's SOL comes from its own label, and
-deposits + withdrawals are summed into one amount per row — each IT 2.0 code is
-inherently receipt- or payment-side, so the split carries no information the
-account-code master does not already hold (same reduction the legacy tool made
-in TEMP.FIN).
+The header date is stamped on every row, each section's SOL comes from the
+nearest label above its table, and deposits + withdrawals are summed into one
+amount per row - each IT 2.0 code is inherently receipt- or payment-side, so
+the split carries nothing the account-code master does not already hold
+(the same reduction the legacy tool made in TEMP.FIN and TEMP.FIN.TR).
 """
 
 from __future__ import annotations
@@ -35,16 +44,20 @@ from typing import Optional
 from ..model import Entry, Source, ZERO
 from ..normalize import clean_text, parse_account_code, parse_amount, parse_date
 
-TITLE_RX = re.compile(
+GLWISE_TITLE_RX = re.compile(
     r"GL\s*IT\s*2\.?0\s+Transaction\s+GL\s*Wise\s+Report.*Consolidated", re.IGNORECASE)
+TXN_TITLE_RX = re.compile(
+    r"GL\s*IT\s*2\.?0\s+Transaction\s+Report\s*-?\s*Consolidated", re.IGNORECASE)
 DATE_LABEL_RX = re.compile(r"^Date\s*:", re.IGNORECASE)
 SOL_LABEL_RX = re.compile(r"^Sol\s*ID(\s*/\s*Desc)?\s*:?$", re.IGNORECASE)
+# a bare section label the way the transaction report writes it: "60001700 - Office"
+SOL_DESC_RX = re.compile(r"^(\d{4,})\s*-\s*\S")
 TOTAL_RX = re.compile(r"^(grand\s+)?total", re.IGNORECASE)
 
 CODE_HDR = ("accode", "acctcode", "accountcode")
 DESC_HDR = ("desc",)
-DEPOSIT_HDR = ("deposit",)
-WITHDRAWAL_HDR = ("withdrawal",)
+DEPOSIT_HDR = ("deposit", "credit")
+WITHDRAWAL_HDR = ("withdrawal", "debit")
 
 HEADER_SEARCH_ROWS = 40      # the title and date block sit near the top
 MIN_PARSE_RATE = 0.50        # same bar as the columnar parser
@@ -68,9 +81,10 @@ class Section:
 
 @dataclass
 class FormLayout:
-    """Everything needed to parse a form-style GL-wise file."""
+    """Everything needed to parse a form-style report."""
 
     report_date: "object"
+    source: Source
     sections: list = field(default_factory=list)
 
     @property
@@ -79,7 +93,7 @@ class FormLayout:
 
 
 def _find_table_headers(rows) -> list:
-    """Every table header row in the sheet — one per SOL section."""
+    """Every table header row in the sheet - one per SOL section."""
     out = []
     for idx, row in enumerate(rows):
         if not row:
@@ -117,6 +131,21 @@ def _value_beside(row, col) -> str:
     return ""
 
 
+def _find_title(rows) -> Optional[Source]:
+    for row in rows[:HEADER_SEARCH_ROWS]:
+        if not row:
+            continue
+        for cell in row:
+            text = clean_text(cell)
+            if not text:
+                continue
+            if GLWISE_TITLE_RX.search(text):
+                return Source.FINACLE_GL
+            if TXN_TITLE_RX.search(text):
+                return Source.FINACLE_TXN
+    return None
+
+
 def _find_report_date(rows):
     for row in rows[:HEADER_SEARCH_ROWS]:
         if not row:
@@ -130,33 +159,37 @@ def _find_report_date(rows):
 
 
 def _sol_for_section(rows, header_row: int) -> str:
-    """The nearest 'Sol ID / Desc :' (or 'Sol ID :') label above the table that
-    actually carries a SOL number."""
+    """The SOL governing the table at header_row: the nearest label above it,
+    either 'Sol ID / Desc : 60001700 - ...' or a bare '60001700 - Office'."""
     for idx in range(header_row - 1, -1, -1):
         row = rows[idx]
         if not row:
             continue
         for col, cell in enumerate(row):
             text = clean_text(cell)
-            label = text.split(":", 1)[0] + ":" if ":" in text else text
-            if not SOL_LABEL_RX.match(label.strip()):
+            if not text:
                 continue
-            m = re.search(r"\d{4,}", _value_beside(row, col))
-            if m:
-                return m.group(0)
+            bare = SOL_DESC_RX.match(text)
+            if bare:
+                return bare.group(1)
+            label = text.split(":", 1)[0] + ":" if ":" in text else text
+            if SOL_LABEL_RX.match(label.strip()):
+                m = re.search(r"\d{4,}", _value_beside(row, col))
+                if m:
+                    return m.group(0)
     return ""
 
 
 def detect_form(rows) -> Optional[FormLayout]:
-    """Recognise a form-style GL-wise report, or return None.
+    """Recognise a form-style Finacle report, or return None.
 
-    Requires the report title, a parsable header date, and at least one
-    Deposits/Withdrawals table.
+    Requires a known report title, a parsable header date, and at least one
+    two-amount-column table.
     """
     if not rows:
         return None
-    if not any(TITLE_RX.search(clean_text(c))
-               for row in rows[:HEADER_SEARCH_ROWS] if row for c in row):
+    source = _find_title(rows)
+    if source is None:
         return None
     report_date = _find_report_date(rows)
     if report_date is None:
@@ -166,7 +199,7 @@ def detect_form(rows) -> Optional[FormLayout]:
         return None
     for section in sections:
         section.sol_id = _sol_for_section(rows, section.header_row)
-    return FormLayout(report_date=report_date, sections=sections)
+    return FormLayout(report_date=report_date, source=source, sections=sections)
 
 
 def parse_form(rows, layout: FormLayout, path="") -> tuple:
@@ -209,7 +242,7 @@ def parse_form(rows, layout: FormLayout, path="") -> tuple:
                 txn_date=layout.report_date,
                 account_code=code,
                 amount=(deposit or ZERO) + (withdrawal or ZERO),
-                source=Source.FINACLE_GL,
+                source=layout.source,
                 sol_id=section.sol_id,
                 description=desc_text,
             ))
@@ -221,12 +254,12 @@ def parse_form(rows, layout: FormLayout, path="") -> tuple:
             f"{skipped_no_code} rows had amounts but no readable account code")
     if not entries:
         raise FileRejected(path, "no data rows found",
-                           "form-style GL-wise report with an empty table")
+                           "form-style Finacle report with an empty table")
 
     if skipped_no_code:
         warnings.append(f"skipped {skipped_no_code} row(s) with amounts but no "
                         f"readable account code")
     if len(layout.sections) > 1:
-        warnings.append(f"{len(layout.sections)} SOL sections read "
-                        f"(Set-ID report); office-wise figures available")
+        warnings.append(f"{len(layout.sections)} SOL sections read; "
+                        f"office-wise figures available")
     return entries, warnings

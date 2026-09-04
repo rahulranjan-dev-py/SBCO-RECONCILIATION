@@ -27,14 +27,19 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from .. import __version__, refdata
 from ..annexure import build_table1, entries_from_reconciliation
+from ..table2 import parse_month as parse_month_label, table2_for_month
+from ..ingest.reader import read_rows
+from ..ingest.detect import detect_kind, ReportKind
 from ..fiscal import Period, fy_label, month_end, month_start, quarter_label
 from ..ingest.batch import load_one
 from ..model import Source
 from ..normalize import parse_amount, parse_date
-from ..reconcile import (coverage, reconcile_by_code, reconcile_by_date,
-                         reconcile_by_office, reconcile_clearing)
-from ..reports import (write_annexure_iv_table1, write_discrepancy_register,
-                       write_discrepancy_report, write_recon_sheet)
+from ..reconcile import (coverage, office_attribution, reconcile_by_code,
+                         reconcile_by_date, reconcile_by_office,
+                         reconcile_clearing)
+from ..reports import (write_annexure_iv_table1, write_annexure_iv_table2,
+                       write_discrepancy_register, write_discrepancy_report,
+                       write_recon_sheet)
 from ..store import Store, adopt_legacy_database, default_db_path
 
 STATIC = Path(__file__).parent / "static"
@@ -55,6 +60,44 @@ def jsonable(value):
     if isinstance(value, (date, datetime)):
         return value.isoformat()
     raise TypeError(type(value))
+
+
+def parse_table2_opening(rows) -> list:
+    """Rows of (code, description, receipt_diff, payment_diff) from a sheet
+    headed AC_CODE | DESCRIPTION | RECEIPT_DIFF | PAYMENT_DIFF - the legacy
+    tool's opening-balance template, and the shape of its own Table-2 data."""
+    from ..normalize import clean_text, parse_account_code, parse_amount
+
+    def norm(v):
+        return "".join(ch for ch in clean_text(v).lower() if ch.isalnum())
+
+    header, cols = None, {}
+    for idx, row in enumerate(rows[:40]):
+        names = {norm(c): i for i, c in enumerate(row or []) if norm(c)}
+        code_col = next((i for k, i in names.items() if k in ("accode", "accountcode", "acctcode")), None)
+        rec = next((i for k, i in names.items() if k in ("receiptdiff", "receiptsdiff", "receipt")), None)
+        pay = next((i for k, i in names.items() if k in ("paymentdiff", "paymentsdiff", "payment")), None)
+        if code_col is not None and rec is not None and pay is not None:
+            header = idx
+            cols = {"code": code_col, "rec": rec, "pay": pay,
+                    "desc": next((i for k, i in names.items() if k.startswith("desc")), None)}
+            break
+    if header is None:
+        return []
+    out = []
+    for row in rows[header + 1:]:
+        if not row:
+            continue
+        code = parse_account_code(row[cols["code"]] if cols["code"] < len(row) else None)
+        if code is None:
+            continue
+        rec = parse_amount(row[cols["rec"]] if cols["rec"] < len(row) else None) or Decimal(0)
+        pay = parse_amount(row[cols["pay"]] if cols["pay"] < len(row) else None) or Decimal(0)
+        desc = clean_text(row[cols["desc"]]) if cols["desc"] is not None and cols["desc"] < len(row) else ""
+        if rec == 0 and pay == 0:
+            continue
+        out.append((code, desc, rec, pay))
+    return out
 
 
 class Api:
@@ -112,6 +155,7 @@ class Api:
                 "batches": [dict(b) for b in batches],
                 "today": date.today().isoformat(),
                 "codes": refdata.dashboard_codes(),
+                "months": store.months_with_data(),
             }
 
     def reconcile(self, q):
@@ -236,11 +280,16 @@ class Api:
                              ("to_code", "to code")):
             if not str(payload.get(field, "")).strip():
                 return {"error": f"The {label} is needed."}
+        scope = str(payload.get("scope", "current")).strip() or "current"
+        if scope not in ("current", "prior"):
+            return {"error": "The transfer entry must apply either to this month's "
+                             "cash account (Table-1) or to an earlier month's "
+                             "pending difference (Table-2)."}
         with self._store() as store:
             store.add_transfer_entry(
                 str(payload["month"]).strip(), str(payload["from_code"]).strip(),
                 str(payload["to_code"]).strip(), amount,
-                payload.get("remarks", ""))
+                payload.get("remarks", ""), scope=scope)
         return {"ok": True}
 
     def annexure(self, payload):
@@ -254,7 +303,7 @@ class Api:
                 return {"error": "Add your DDO code, HO name and division in "
                                  "Settings before generating the return."}
             month_label = f"{month:%b-%Y}"
-            transfer_entries = store.transfer_entries(month_label)
+            transfer_entries = store.transfer_entries(month_label, scope="current")
             result = build_table1(result, month_label, transfer_entries)
 
             name = f"CBS-MRR-TABLE1-{month:%b-%y}.xlsx"
@@ -269,6 +318,55 @@ class Api:
                     "difference_receipt": totals["difference_receipt"],
                     "difference_payment": totals["difference_payment"],
                     "transfer_entries": len(transfer_entries)}
+
+    def annexure2(self, payload):
+        """Annexure-IV Table-2: opening / current / rectified / pending, carried
+        forward month by month from everything loaded."""
+        month = parse_date(payload.get("month", ""), allow_month_only=True) or date.today()
+        with self._store() as store:
+            cfg = (store.get("ddo_code", ""), store.get("ho_name", ""),
+                   store.get("division", ""))
+            if not all(cfg):
+                return {"error": "Add your DDO code, HO name and division in "
+                                 "Settings before generating the return."}
+            month_label = f"{month:%b-%Y}"
+            result = table2_for_month(store, month_label)
+            name = f"CBS-MRR-TABLE2-{month:%b-%y}.xlsx"
+            write_annexure_iv_table2(
+                self.outdir / name, result, ddo_code=cfg[0], ho_name=cfg[1],
+                division=cfg[2], month=month,
+                include_settled=bool(payload.get("include_settled", True)))
+            DOWNLOADABLE.add(name)
+            return {"file": name, "rows": len(result.rows),
+                    "pending": len(result.pending),
+                    "opening": result.opening_total,
+                    "current": result.current_total,
+                    "rectified": result.rectified_total,
+                    "closing": result.closing_total,
+                    "warnings": result.warnings,
+                    "seeded": bool(store.table2_opening(month_label))}
+
+    def table2_opening_upload(self, filename, month, body):
+        """First-time Table-2: the balances it opens with, from last month's
+        Table-2 (AC_CODE | DESCRIPTION | RECEIPT_DIFF | PAYMENT_DIFF)."""
+        month_date = parse_date(month, allow_month_only=True)
+        if month_date is None:
+            raise ValueError("Say which month these opening balances belong to, "
+                             "for example Jul-2026.")
+        safe = Path(unquote(filename)).name or "opening.dat"
+        with tempfile.TemporaryDirectory(prefix="sbco_") as tmpdir:
+            target = Path(tmpdir) / safe
+            target.write_bytes(body)
+            rows = read_rows(target)
+        parsed = parse_table2_opening(rows)
+        if not parsed:
+            raise ValueError("That file has no AC_CODE / RECEIPT_DIFF / PAYMENT_DIFF "
+                             "rows. Use the previous month's Table-2, or the "
+                             "opening-balance template.")
+        label = f"{month_date:%b-%Y}"
+        with self.lock, self._store() as store:
+            count = store.replace_table2_opening(label, parsed)
+        return {"month": label, "rows": count}
 
     def export(self, payload):
         with self._store() as store:
@@ -341,6 +439,12 @@ class Api:
                 result, entry_date, office_name=str(payload.get("office", "")).strip())
             already = store.open_register_codes(entry_date)
             fresh = [e for e in candidates if e.account_code not in already]
+            # Name the office when the office-wise data can: the register's
+            # column (e), in the form the legacy remarks used.
+            for entry in fresh:
+                if not entry.office_name:
+                    by_office = reconcile_by_office(store, entry.account_code, period)
+                    entry.office_name = office_attribution(by_office)
             store.add_register_entries(fresh)
             return {"added": len(fresh),
                     "skipped": len(candidates) - len(fresh),
@@ -543,6 +647,16 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as exc:
                 return self._fail(self._opaque(exc), 500)
 
+        if url.path == "/api/table2-opening":
+            filename = self.headers.get("X-Filename", "opening.dat")
+            month = unquote(self.headers.get("X-Month", ""))
+            try:
+                return self._json(self.api.table2_opening_upload(filename, month, body))
+            except ValueError as exc:
+                return self._fail(str(exc), 400)
+            except Exception as exc:
+                return self._fail(self._opaque(exc), 500)
+
         try:
             payload = json.loads(body or b"{}")
         except json.JSONDecodeError:
@@ -552,6 +666,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/config": self.api.save_config,
             "/api/reverse": self.api.reverse,
             "/api/annexure": self.api.annexure,
+            "/api/annexure2": self.api.annexure2,
             "/api/export": self.api.export,
             "/api/transfer-entry": self.api.add_transfer_entry,
             "/api/record-discrepancies": self.api.record_discrepancies,
